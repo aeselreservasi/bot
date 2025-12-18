@@ -1,23 +1,70 @@
-/* =========================
-   STORAGE WRAPPER
-========================= */
+/* ======================================================
+   STORAGE
+====================================================== */
 const storage = {
-  get(key, defaultValue = null) {
-    const val = GM_getValue(key);
-    return val === undefined ? defaultValue : val;
+  get(key, def = null) {
+    const v = GM_getValue(key);
+    return v === undefined ? def : v;
   },
-  set(key, value) {
-    GM_setValue(key, value);
-  },
-  remove(key) {
-    GM_setValue(key, undefined);
+  set(key, v) {
+    GM_setValue(key, v);
   }
 };
 
-/* =========================
-   STYLE INJECTION
-========================= */
+/* ======================================================
+   STYLE
+====================================================== */
 GM_addStyle(`
+#userscript-data-ui {
+  position: fixed;
+  width: 380px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.3);
+  z-index: 9999999;
+  font-family: Arial, sans-serif;
+}
+#dm-header {
+  background: #2c3e50;
+  color: white;
+  padding: 8px 10px;
+  cursor: move;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 8px 8px 0 0;
+}
+#dm-header button {
+  background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+#dm-body {
+  padding: 10px;
+  max-height: 70vh;
+  overflow: auto;
+}
+#dm-body input,
+#dm-body textarea,
+#dm-body button,
+#dm-body select {
+  width: 100%;
+  margin-bottom: 6px;
+  box-sizing: border-box;
+}
+#dm-body table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+#dm-body td, #dm-body th {
+  border: 1px solid #ccc;
+  padding: 4px;
+}
+.button-container button {
+  margin-right: 5px;
+}
 .loading-overlay {
   position: fixed;
   inset: 0;
@@ -25,12 +72,11 @@ GM_addStyle(`
   display: none;
   justify-content: center;
   align-items: center;
-  flex-direction: column;
-  z-index: 999999;
+  z-index: 99999999;
 }
 .loading-spinner {
-  width: 50px;
-  height: 50px;
+  width: 40px;
+  height: 40px;
   border: 5px solid #eee;
   border-top: 5px solid #3498db;
   border-radius: 50%;
@@ -38,168 +84,138 @@ GM_addStyle(`
 }
 .loading-text {
   color: white;
-  margin-top: 12px;
+  margin-top: 10px;
 }
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-.container {
-  background: #fff;
-  padding: 10px;
-  border: 1px solid #ccc;
-  max-width: 600px;
-}
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-td, th {
-  border: 1px solid #ccc;
-  padding: 6px;
-}
-.button-container button {
-  margin-right: 5px;
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 `);
 
-/* =========================
+/* ======================================================
    UI INJECTION
-========================= */
+====================================================== */
 function injectUI() {
   if (document.getElementById("userscript-data-ui")) return;
 
-  const wrapper = document.createElement("div");
-  wrapper.id = "userscript-data-ui";
-  wrapper.innerHTML = `
-    <div class="container">
-      <label>Upload data</label>
-      <input type="file" id="uploadPdf" accept="application/json" multiple />
-      <button id="processBtn">Process</button>
+  const pos = storage.get("ui-pos", { top: 120, left: 40 });
+  const minimized = storage.get("ui-min", false);
+
+  const ui = document.createElement("div");
+  ui.id = "userscript-data-ui";
+  ui.style.top = pos.top + "px";
+  ui.style.left = pos.left + "px";
+
+  ui.innerHTML = `
+    <div id="dm-header">
+      <span>📦 Data Manager</span>
+      <button id="dm-toggle">—</button>
     </div>
-    <div id="dataContainer"></div>
+    <div id="dm-body" style="${minimized ? "display:none" : ""}">
+      <label>Upload JSON</label>
+      <input type="file" id="uploadPdf" accept="application/json" multiple>
+      <button id="processBtn">Process</button>
+      <hr>
+      <div id="dataContainer"></div>
+    </div>
     <div class="loading-overlay" id="loadingOverlay">
-      <div class="loading-spinner"></div>
-      <div class="loading-text">Processing...</div>
+      <div>
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Processing...</div>
+      </div>
     </div>
   `;
-  document.body.prepend(wrapper);
+
+  document.body.appendChild(ui);
+  enableDrag(ui);
+  setupToggle();
 }
 
 injectUI();
 
-/* =========================
-   LOADING
-========================= */
-function showLoading(text = "Processing...") {
-  const overlay = document.getElementById("loadingOverlay");
-  overlay.querySelector(".loading-text").textContent = text;
-  overlay.style.display = "flex";
-}
-function hideLoading() {
-  document.getElementById("loadingOverlay").style.display = "none";
+/* ======================================================
+   DRAG
+====================================================== */
+function enableDrag(panel) {
+  const header = panel.querySelector("#dm-header");
+  let dragging = false, x, y;
+
+  header.addEventListener("mousedown", e => {
+    dragging = true;
+    x = e.clientX - panel.offsetLeft;
+    y = e.clientY - panel.offsetTop;
+    document.body.style.userSelect = "none";
+  });
+
+  document.addEventListener("mousemove", e => {
+    if (!dragging) return;
+    panel.style.left = e.clientX - x + "px";
+    panel.style.top = e.clientY - y + "px";
+  });
+
+  document.addEventListener("mouseup", () => {
+    if (!dragging) return;
+    dragging = false;
+    document.body.style.userSelect = "";
+    storage.set("ui-pos", {
+      top: panel.offsetTop,
+      left: panel.offsetLeft
+    });
+  });
 }
 
-/* =========================
-   CONSTANTS
-========================= */
+/* ======================================================
+   TOGGLE
+====================================================== */
+function setupToggle() {
+  const btn = document.getElementById("dm-toggle");
+  const body = document.getElementById("dm-body");
+
+  btn.onclick = () => {
+    const hidden = body.style.display === "none";
+    body.style.display = hidden ? "block" : "none";
+    storage.set("ui-min", !hidden);
+  };
+}
+
+/* ======================================================
+   DATA LOGIC (SIMPLIFIED & STABLE)
+====================================================== */
 const validKeys = [
   "Nama Lengkap","Nomor Telepon","Jenis Ujian","ID Prometrik",
   "Password","Tanggal Lahir","Jenis Kelamin",
   "Lokasi Ujian","Tanggal Ujian","Jam Ujian","Catatan"
 ];
 
-const listUjian = {
-  "F10-E10J": "JFT",
-  "T20-J11J": "PM",
-  "T10-J11J": "RESTO"
-};
-
-const reverseListUjian = Object.entries(listUjian)
-  .reduce((a,[k,v]) => (a[v.toLowerCase()] = k, a), {});
-
-/* =========================
-   HELPERS
-========================= */
-function orderingJson(json) {
-  const out = {};
-  validKeys.forEach(k => json[k] !== undefined && (out[k] = json[k]));
-  return out;
+function orderingJson(j) {
+  const o = {};
+  validKeys.forEach(k => j[k] !== undefined && (o[k] = j[k]));
+  return o;
 }
 
-function cleanAndSplit(v) {
-  if (!v) return [];
-  if (Array.isArray(v)) v = v.join(",");
-  return String(v).replace(/\s*,\s*/g, ",").split(",");
-}
-
-function getExamCodeFromJenisUjian(jenis) {
-  if (!jenis) return "";
-  const lower = jenis.toLowerCase();
-  return Object.entries(reverseListUjian)
-    .find(([k]) => lower.includes(k))?.[1] || "";
-}
-
-/* =========================
-   LOAD & SAVE
-========================= */
 function loadSavedData() {
   const data = storage.get("userData", {});
-  const lists = storage.get("userDataLists", []);
-
-  if (lists.length) updateDropdown(lists, data.id);
-
-  const display = Object.keys(data).length ? data : {
-    "Nama Lengkap": "",
-    "Jenis Ujian": "",
-    "Nomor Telepon": "",
-    "ID Prometrik": "",
-    "Password": "",
-    "Tanggal Lahir": "",
-    "Jenis Kelamin": "",
-    "Lokasi Ujian": "",
-    "Tanggal Ujian": "",
-    "Jam Ujian": "",
-    "Catatan": ""
-  };
-
   document.getElementById("dataContainer").innerHTML =
-    createTableInput(orderingJson(display));
+    createTable(orderingJson(data));
 }
 
-function saveEditedData() {
-  const inputs = [...document.querySelectorAll("[id^='input-']")];
-  const updated = {};
-  inputs.forEach(i => updated[i.id.replace("input-","")] = i.value.trim());
-
-  const lists = storage.get("userDataLists", []);
-  updated.id = updated.id || Date.now().toString();
-
-  const idx = lists.findIndex(d => d.id === updated.id);
-  idx >= 0 ? lists[idx] = updated : lists.push(updated);
-
-  storage.set("userData", updated);
-  storage.set("userDataLists", lists);
-
+function saveData() {
+  const obj = {};
+  document.querySelectorAll("[id^='input-']").forEach(i => {
+    obj[i.id.replace("input-","")] = i.value.trim();
+  });
+  storage.set("userData", obj);
   alert("Data saved");
-  loadSavedData();
 }
 
-/* =========================
-   UI RENDER
-========================= */
-function createTableInput(data) {
-  const rows = Object.entries(data)
-    .filter(([k]) => k !== "id")
-    .map(([k,v]) => `
-      <tr>
-        <td>${k}</td>
-        <td>
-          ${["Catatan","Tanggal Ujian","Lokasi Ujian","Jam Ujian"].includes(k)
-            ? `<textarea id="input-${k}">${v || ""}</textarea>`
-            : `<input id="input-${k}" value="${v || ""}">`}
-        </td>
-      </tr>
-    `).join("");
+function createTable(data) {
+  const rows = Object.entries(data).map(([k,v]) => `
+    <tr>
+      <td>${k}</td>
+      <td>
+        ${["Catatan","Tanggal Ujian","Lokasi Ujian","Jam Ujian"].includes(k)
+          ? `<textarea id="input-${k}">${v||""}</textarea>`
+          : `<input id="input-${k}" value="${v||""}">`}
+      </td>
+    </tr>
+  `).join("");
 
   return `
     <table>
@@ -212,59 +228,30 @@ function createTableInput(data) {
   `;
 }
 
-function updateDropdown(lists, selectedId) {
-  let sel = document.getElementById("dataListDropdown");
-  if (!sel) {
-    sel = document.createElement("select");
-    sel.id = "dataListDropdown";
-    document.body.prepend(sel);
-  }
-  sel.innerHTML = `<option value="">Pilih Data</option>`;
-  lists.forEach((d,i)=>{
-    const o = document.createElement("option");
-    o.value = d.id;
-    o.textContent = `${i+1}. ${d["Nama Lengkap"] || "Unnamed"}`;
-    if (d.id === selectedId) o.selected = true;
-    sel.appendChild(o);
-  });
-  sel.onchange = () => {
-    const d = lists.find(x=>x.id===sel.value);
-    storage.set("userData", d || {});
-    loadSavedData();
-  };
-}
-
-/* =========================
+/* ======================================================
    EVENTS
-========================= */
+====================================================== */
 document.addEventListener("click", e => {
-  if (e.target.id === "saveBtn") saveEditedData();
+  if (e.target.id === "saveBtn") saveData();
 });
 
 document.getElementById("processBtn").onclick = async () => {
   const files = document.getElementById("uploadPdf").files;
-  if (!files.length) return alert("No file");
+  if (!files.length) return alert("No file selected");
 
-  showLoading(`Processing ${files.length} file(s)...`);
+  const overlay = document.getElementById("loadingOverlay");
+  overlay.style.display = "flex";
 
-  const lists = storage.get("userDataLists", []);
-
-  for (const file of files) {
-    const json = JSON.parse(await file.text());
-    const records = Array.isArray(json) ? json : [json];
-    records.forEach(r=>{
-      const n = orderingJson(r);
-      n.id = Date.now() + Math.random();
-      lists.push(n);
-    });
+  for (const f of files) {
+    const json = JSON.parse(await f.text());
+    storage.set("userData", orderingJson(json));
   }
 
-  storage.set("userDataLists", lists);
-  hideLoading();
+  overlay.style.display = "none";
   loadSavedData();
 };
 
-/* =========================
+/* ======================================================
    INIT
-========================= */
+====================================================== */
 loadSavedData();
