@@ -2,7 +2,7 @@
 (function () {
   if (document.getElementById("aesel-popup-overlay")) return;
 
-  const POPUP_URL = "https://username.github.io/aesel/popup.html";
+  const POPUP_URL = "https://aeselreservasi.github.io/bot/popup.html";
 
   // Overlay
   const overlay = document.createElement("div");
