@@ -16,21 +16,9 @@
 (function () {
   'use strict';
 
-  /*
-   * Entry point userscript
-   * Semua logic ada di core.js
-   * File ini hanya loader + safety wrapper
-   */
-
   console.log("[Data Manager] Userscript loaded");
 
-  // Safety: pastikan core.js sudah termuat
-  if (typeof loadSavedData !== "function") {
-    console.error("[Data Manager] core.js gagal dimuat");
-    return;
-  }
-
-  // Optional: toggle UI pakai shortcut
+  // Toggle UI (Ctrl + Shift + D)
   document.addEventListener("keydown", (e) => {
     if (e.ctrlKey && e.shiftKey && e.key === "D") {
       const ui = document.getElementById("userscript-data-ui");
@@ -39,5 +27,4 @@
       }
     }
   });
-
 })();
