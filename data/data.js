@@ -30,19 +30,7 @@ const hideLoading = () => (overlay.style.display = "none");
 /* =====================================================
    CONSTANTS
 ===================================================== */
-const validKeys = [
-  "Nama Lengkap",
-  "Nomor Telepon",
-  "Jenis Ujian",
-  "ID Prometrik",
-  "Password",
-  "Tanggal Lahir",
-  "Jenis Kelamin",
-  "Lokasi Ujian",
-  "Tanggal Ujian",
-  "Jam Ujian",
-  "Catatan",
-];
+const validKeys = ["Nama Lengkap", "Nomor Telepon", "Jenis Ujian", "ID Prometrik", "Password", "Tanggal Lahir", "Jenis Kelamin", "Lokasi Ujian", "Tanggal Ujian", "Jam Ujian", "Catatan"];
 
 /* =====================================================
    UPLOAD / IMPORT JSON
@@ -76,9 +64,7 @@ document.getElementById("processBtn").addEventListener("click", async () => {
         result["Lokasi Ujian"] = normalizeArray(result["Lokasi Ujian"]);
         result["Jam Ujian"] = normalizeArray(result["Jam Ujian"]);
 
-        result.id =
-          record.id ||
-          Date.now() + Math.random().toString(36).substring(2, 9);
+        result.id = record.id || Date.now() + Math.random().toString(36).substring(2, 9);
 
         lists.push(result);
       }
@@ -179,9 +165,7 @@ function saveEditedData() {
   let lists = JSON.parse(localStorage.getItem("userDataLists") || "[]");
   const current = JSON.parse(localStorage.getItem("userData") || "{}");
 
-  updated.id =
-    current.id ||
-    Date.now() + Math.random().toString(36).substring(2, 9);
+  updated.id = current.id || Date.now() + Math.random().toString(36).substring(2, 9);
 
   const idx = lists.findIndex((d) => d.id === updated.id);
   idx >= 0 ? (lists[idx] = updated) : lists.push(updated);
@@ -222,9 +206,7 @@ function createTableInput(data) {
     .filter(([k]) => k !== "id")
     .map(([k, v]) => {
       const big = ["Catatan", "Tanggal Ujian", "Lokasi Ujian", "Jam Ujian"].includes(k);
-      const input = big
-        ? `<textarea id="input-${k}" style="width:100%">${v || ""}</textarea>`
-        : `<input id="input-${k}" value="${v || ""}" style="width:100%">`;
+      const input = big ? `<textarea id="input-${k}" style="width:100%">${v || ""}</textarea>` : `<input id="input-${k}" value="${v || ""}" style="width:100%">`;
       return `<tr><td>${k}</td><td>${input}</td></tr>`;
     })
     .join("");
@@ -250,12 +232,15 @@ function normalizeArray(v) {
 }
 
 function normalizeTanggal(v) {
-  // SUDAH ISO ARRAY
-  if (Array.isArray(v) && v.every(d => /^\d{4}-\d{2}-\d{2}$/.test(d))) {
+  // ⛔ NULL / UNDEFINED → AMAN
+  if (!v) return [];
+
+  // ✅ SUDAH ISO ARRAY
+  if (Array.isArray(v) && v.every((d) => /^\d{4}-\d{2}-\d{2}$/.test(d))) {
     return v;
   }
 
-  // STRING UI → ISO
+  // ✅ STRING UI → PARSE
   if (typeof v === "string") {
     return formatTanggalToData(cleanAndSplit(v));
   }
@@ -266,7 +251,7 @@ function normalizeTanggal(v) {
 function cleanAndSplit(input) {
   return String(input || "")
     .split(",")
-    .map(s => s.trim())
+    .map((s) => s.trim())
     .filter(Boolean);
 }
 
@@ -284,9 +269,18 @@ function orderingJson(json) {
 ===================================================== */
 function formatTanggalToData(arr) {
   const bln = {
-    januari: "01", februari: "02", maret: "03", april: "04", mei: "05",
-    juni: "06", juli: "07", agustus: "08", september: "09",
-    oktober: "10", november: "11", desember: "12"
+    januari: "01",
+    februari: "02",
+    maret: "03",
+    april: "04",
+    mei: "05",
+    juni: "06",
+    juli: "07",
+    agustus: "08",
+    september: "09",
+    oktober: "10",
+    november: "11",
+    desember: "12",
   };
 
   return arr
