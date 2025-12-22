@@ -72,7 +72,7 @@ document.getElementById("processBtn").addEventListener("click", async () => {
 
     localStorage.setItem("userDataLists", JSON.stringify(lists));
     hideLoading();
-    location.reload();
+    loadSavedData();
   } catch (err) {
     hideLoading();
     console.error("IMPORT ERROR:", err);
@@ -144,7 +144,7 @@ function updateDataListDropdown(dataLists, selectedId) {
     const selected = dataLists.find((d) => d.id === id);
     if (!selected) return;
     localStorage.setItem("userData", JSON.stringify(selected));
-    location.reload();
+    loadSavedData();
   };
 }
 
@@ -174,7 +174,7 @@ function saveEditedData() {
   localStorage.setItem("userDataLists", JSON.stringify(lists));
 
   alert("Data berhasil disimpan");
-  location.reload();
+  loadSavedData();
 }
 
 /* =====================================================
@@ -199,6 +199,38 @@ function downloadJSON(data, filename) {
 }
 
 /* =====================================================
+   DELETE FUNCTIONS
+===================================================== */
+function deleteCurrentData() {
+  const current = JSON.parse(localStorage.getItem("userData") || "{}");
+  if (!current.id) {
+    alert("Tidak ada data yang dipilih");
+    return;
+  }
+
+  if (!confirm("Hapus data ini?")) return;
+
+  let lists = JSON.parse(localStorage.getItem("userDataLists") || "[]");
+  lists = lists.filter((d) => d.id !== current.id);
+
+  localStorage.setItem("userDataLists", JSON.stringify(lists));
+  localStorage.removeItem("userData");
+
+  alert("Data berhasil dihapus");
+  loadSavedData();
+}
+
+function deleteAllData() {
+  if (!confirm("HAPUS SEMUA DATA?\nTindakan ini tidak bisa dibatalkan!")) return;
+
+  localStorage.removeItem("userDataLists");
+  localStorage.removeItem("userData");
+
+  alert("Semua data berhasil dihapus");
+  loadSavedData();
+}
+
+/* =====================================================
    TABLE UI
 ===================================================== */
 function createTableInput(data) {
@@ -217,8 +249,10 @@ function createTableInput(data) {
       ${rows}
     </table>
     <div class="button-container">
-      <button onclick="saveEditedData()">Simpan</button>
-      <button onclick="exportToJSON()">Export</button>
+      <button onclick="saveEditedData()">💾 Simpan</button>
+      <button onclick="exportToJSON()">📤 Export</button>
+      <button onclick="deleteCurrentData()">🗑 Delete</button>
+      <button onclick="deleteAllData()">💣 Delete All</button>
     </div>
   `;
 }
