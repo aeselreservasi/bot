@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AUTOMATION</title>
+    <link rel="stylesheet" href="automation.css" />
+  </head>
+  <body>
+    <div class="container">
+      <a href="../../popup.html">HOME</a>
+      <h1>AUTOMATION</h1>
+      <table>
+        <tr>
+          <td>
+            <input type="checkbox" name="autoLogin" id="login" />
+            <label for="login">LOGIN</label>
+          </td>
+          <td>
+            <input type="checkbox" name="autoCheck" id="check" />
+            <label for="check">SKIP CHECK</label>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <input type="checkbox" name="autoExam" id="exam" />
+            <label for="exam">EXAM SELECT</label>
+          </td>
+          <td>
+            <input type="checkbox" name="autoInput" id="input" />
+            <label for="input">DATA INPUT</label>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <input type="checkbox" name="autoReserve" id="reserve" />
+            <label for="reserve">RESERVATION</label>
+          </td>
+          <td>
+            <input type="checkbox" name="autoChange" id="change" />
+            <label for="change">RESCHEDULE</label>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <input type="checkbox" name="autoTarget" id="target" />
+            <label for="target">NORMAL TARGET</label>
+          </td>
+          <td>
+            <input type="checkbox" name="autoFastTarget" id="fasttarget" />
+            <label for="fasttarget">FAST TARGET</label>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <input type="checkbox" name="autoPayMethod" id="paymethod" />
+            <label for="paymethod">PAYMENT METHOD</label>
+          </td>
+          <td>
+            <input type="checkbox" name="autoPayCC" id="paycc" />
+            <label for="paycc">PAYMENT CC</label>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <input type="checkbox" name="autoConfirm" id="confirm" />
+            <label for="confirm">CONFIRM</label>
+          </td>
+          <td>
+            <input type="checkbox" name="autoBegal" id="begal" />
+            <label for="begal">STANDBY CONFIRM</label>
+          </td>
+        </tr>
+      </table>
+      <div class="btn-container">
+        <button id="checkAll">CHECK ALL</button>
+        <button id="reset">UNCHECK ALL</button>
+      </div>
+    </div>
+
+    <script src="automation.js"></script>
+  </body>
+</html>

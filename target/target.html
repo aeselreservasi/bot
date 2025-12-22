@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TARGET</title>
+    <link rel="stylesheet" href="target.css" />
+  </head>
+  <body>
+    <header>
+      <a class="home-link" href="../../popup.html">HOME</a>
+      <h1>CHOOSE DATE, PLACE & TIME</h1>
+    </header>
+
+    <form id="dateForm">
+      <label for="date">Date:</label>
+      <input type="date" id="date" required />
+      <button type="submit">Submit</button>
+    </form>
+
+    <form id="targetForm">
+      <label for="city">Place & Time:</label>
+      <select id="city">
+        <option value="">Choose Place</option>
+        <option value="IOJ05">Yogyakarta UII</option>
+        <option value="IOJ14">Yogyakarta Ngaglik</option>
+        <option value="IOJ04">Bandung Andir</option>
+        <option value="IOJ16">Bandung Astanaanyar</option>
+        <option value="IOJ03">Surabaya</option>
+        <option value="IOJ08">Semarang Banyumanik</option>
+        <option value="IOJ15">Semarang Tembalang</option>
+        <option value="IOJ10">Jakarta Satria Tower A</option>
+        <option value="IOJ12">Jakarta Satria Tower B</option>
+        <option value="IOJ13">Jakarta Plaza Central</option>
+        <option value="IOJ02">Jakarta Timur</option>
+        <option value="IOJ07">Jakarta Pademangan</option>
+        <option value="IOJ06">Medan</option>
+        <option value="IOJ09">Denpasar</option>
+        <option value="IOJ11">Manado</option>
+      </select>
+
+      <select id="time">
+        <option value="">Choose Time</option>
+        <option value="09:15">09:15</option>
+        <option value="10:00">10:00</option>
+        <option value="10:45">10:45</option>
+        <option value="11:30">11:30</option>
+        <option value="12:15">12:15</option>
+        <option value="13:00">13:00</option>
+        <option value="13:45">13:45</option>
+        <option value="14:30">14:30</option>
+        <option value="15:15">15:15</option>
+        <option value="16:00">16:00</option>
+        <option value="16:45">16:45</option>
+        <option value="17:30">17:30</option>
+      </select>
+
+      <button type="submit">Submit</button>
+      <div class="button-container">
+        <button type="button" class="add-all" id="addAllTimesButton">
+          Add All Time
+        </button>
+        <button type="button" class="add-all" id="addAllCitiesButton">
+          Add All Place
+      </div>
+    </form>
+
+    <button type="button" class="reset-button" id="resetButton">Reset</button>
+    <div class="main">
+      <h2>SAVED</h2>
+      <div class="data-container">
+        <h4>DATE</h4>
+        <ul id="dateList"></ul>
+      </div>
+
+      <div class="data-container">
+        <h4>PLACE</h4>
+        <ul id="cityList"></ul>
+      </div>
+
+      <div class="data-container">
+        <h4>TIME</h4>
+        <ul id="jamList"></ul>
+      </div>
+    </div>
+    <h4>
+      <a class="home-link" href="../../popup.html">HOME</a>
+    </h4>
+
+    <script src="target.js"></script>
+  </body>
+</html>
