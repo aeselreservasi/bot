@@ -1,19 +1,25 @@
 // GitHub: login.js
 (function () {
-    const data = window.myAppData;
-    if (!data) return;
+    // Coba ambil dari window atau unsafeWindow
+    const data = window.myAppData || (typeof unsafeWindow !== 'undefined' ? unsafeWindow.myAppData : null);
+    
+    console.log("%c[Logic] Script mulai berjalan...", "background: #444; color: #fff; padding: 2px 5px;");
 
-    console.log("%c[Logic] Mencari elemen login...", "color: orange");
+    if (!data) {
+        console.error("[Logic] ERROR: window.myAppData tidak ditemukan!");
+        return;
+    }
 
-    // Gunakan interval agar script terus mencari sampai form muncul
+    console.log("%c[Logic] Mencari elemen login untuk: " + data.id, "color: orange");
+
     const timer = setInterval(() => {
         const idField = document.querySelector("#inputPrometricID");
         const pwField = document.querySelector("#inputPassword");
         const loginBtn = document.querySelector('button[name="B1"]');
 
         if (idField && pwField) {
-            clearInterval(timer); // Berhenti mencari jika sudah ketemu
-            console.log("%c[Logic] Form ditemukan! Mengisi...", "color: #00ff00");
+            clearInterval(timer);
+            console.log("%c[Logic] Form ditemukan!", "color: #00ff00; font-weight: bold;");
 
             idField.value = data.id;
             pwField.value = data.pw;
@@ -22,20 +28,14 @@
             idField.dispatchEvent(new Event("input", ev));
             pwField.dispatchEvent(new Event("input", ev));
 
-            // Tunggu tombol aktif (tidak disabled) baru klik
-            const obs = new MutationObserver(() => {
-                if (!loginBtn.disabled && data.flags.autoLogin) {
-                    console.log("[Logic] Klik Login!");
+            // Klik login jika tidak disabled
+            const clickTimer = setInterval(() => {
+                if (loginBtn && !loginBtn.disabled) {
+                    console.log("[Logic] Tombol aktif, LOGIN.");
                     loginBtn.click();
-                    obs.disconnect();
+                    clearInterval(clickTimer);
                 }
-            });
-            obs.observe(loginBtn, { attributes: true, attributeFilter: ["disabled"] });
-            
-            // Jaga-jaga jika observer tidak trigger
-            setTimeout(() => {
-                if (loginBtn && !loginBtn.disabled) loginBtn.click();
-            }, 2000);
+            }, 500);
         }
-    }, 500); // Cek setiap 0.5 detik
+    }, 500);
 })();
