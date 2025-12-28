@@ -1,9 +1,6 @@
 (function () {
   const masterData = window.__BOT_DATA__;
-  if (!masterData) {
-    console.error("[BOT] Data __BOT_DATA__ tidak ditemukan.");
-    return;
-  }
+  if (!masterData) return;
 
   const flags = masterData.auto_flags || {};
   const jenisUjian = masterData.jenis_ujian_kode;
@@ -14,128 +11,108 @@
   );
 
   // =========================
-  // Helper Functions
+  // WAIT FORM
   // =========================
+  const waitForForm = (cb, timeout = 5000) => {
+    const start = Date.now();
+    const timer = setInterval(() => {
+      if (document.forms && document.forms.form) {
+        clearInterval(timer);
+        cb(document.forms.form);
+      } else if (Date.now() - start > timeout) {
+        clearInterval(timer);
+        console.error("[BOT] Form tidak muncul (timeout)");
+      }
+    }, 100);
+  };
 
-  const setSelect = (name, value) => {
-    const el = document.querySelector(`select[name="${name}"]`);
+  // =========================
+  // HELPERS (FORM-SCOPED)
+  // =========================
+  const setSelect = (form, name, val) => {
+    const el = form[name];
     if (!el) {
       console.warn(`[BOT] Select ${name} tidak ditemukan`);
       return;
     }
-    el.value = String(value);
+    el.value = String(val);
     el.dispatchEvent(new Event("change", { bubbles: true }));
   };
 
-  const clickRadio = (name, value) => {
-    const el = document.querySelector(
-      `input[type="radio"][name="${name}"][value="${value}"]`
-    );
+  const clickRadio = (form, name, val) => {
+    const el = [...form.querySelectorAll(`input[name="${name}"]`)]
+      .find(r => r.value === val);
     if (el && !el.checked) el.click();
   };
 
-  const clickCheck = (name, value) => {
-    const el = document.querySelector(
-      `input[type="checkbox"][name="${name}"][value="${value}"]`
-    );
+  const clickCheck = (form, name, val) => {
+    const el = [...form.querySelectorAll(`input[name="${name}"]`)]
+      .find(c => c.value === val);
     if (el && !el.checked) el.click();
   };
 
   // =========================
-  // 1. DATA UMUM
+  // INPUT DATA
   // =========================
+  const inputDataUmum = (form) => {
+    const [y, m, d] = masterData.tanggal_lahir_iso
+      .split("-")
+      .map(Number);
 
-  function inputDataUmum() {
-    // ---- Tanggal Lahir (CRITICAL FIX) ----
-    const iso = masterData.tanggal_lahir_iso;
-    if (iso && iso.includes("-")) {
-      const [y, m, d] = iso.split("-").map(Number);
+    console.log(`[BOT] Input Tanggal: ${y}-${m}-${d}`);
 
-      console.log(`[BOT] Input Tanggal: ${y}-${m}-${d}`);
-
-      // WAJIB urut + delay agar ValidDate() lolos
-      setSelect("selBYear", y);
-
-      setTimeout(() => {
-        setSelect("selBMonth", m);
-
-        setTimeout(() => {
-          setSelect("selBDay", d);
-        }, 100);
-      }, 100);
-    }
-
-    // ---- Jenis Kelamin ----
-    if (masterData.jenis_kelamin) {
-      const jk = masterData.jenis_kelamin.toLowerCase();
-      clickRadio("rdoGender", jk.includes("laki") ? "2" : "1");
-    }
-
-    // ---- Kebangsaan ----
-    clickRadio("rdoNation", "0");
-    setSelect("selNation", "Indonesia");
-  }
-
-  inputDataUmum();
-
-  // =========================
-  // 2. DATA KHUSUS UJIAN
-  // =========================
-
-  if (jenisUjian === "JFT") {
-    clickRadio("rdoLang", "0");
-    setSelect("selLang", "Indonesian");
-
-    // Survey JFT
-    clickCheck("chkOccupation", "M"); // Tidak ikut ujian skill
-    setSelect("selTraveling", "No, I have not been to Japan before");
-    setSelect("selStudy", "Over 300 hours");
-    clickCheck("chkCBT", "A");
-    clickCheck("chkTextbook", "A");
-    clickCheck("chkWebSite", "A");
-  } else if (jenisUjian === "PM" || jenisUjian === "RESTO") {
-    setSelect("selJob", "University student/graduate student");
-    clickRadio("chkResidence", "A");
-    clickRadio("chkWork", "A");
-    clickRadio("rdoTaken", "This is the first time.");
-    setSelect(
-      "selLearn",
-      "I knew that there were learning texts, but I didn't know where I could find them."
-    );
-    clickRadio("chkKnows", "A");
-    clickRadio("rdoAbility", "Have passed");
-  } else if (jenisUjian === "KGINDO" || jenisUjian === "KGJAPAN") {
-    setSelect("selAcademic", "High school graduate");
-    setSelect("SelExp", "I don't have any work experience.");
-    setSelect("selVisit", "No, I have not been to Japan before");
-    setSelect("selNursing1", "less than 1 month");
-    setSelect("selNursing2", "self study");
-    setSelect("selJpLevel", "JFT-Basic");
-  } else if (jenisUjian === "PERTANIAN" || jenisUjian === "PETERNAKAN") {
-    setSelect("selTraveling", "No");
-    setSelect("selStudy", "80 hours or less");
-    setSelect("selEng", "None");
-    setSelect("selAgre", "Agree");
-    setSelect("selStatus", "A");
-  }
-
-  // =========================
-  // 3. NEXT BUTTON
-  // =========================
-
-  if (flags.autoInput) {
+    setSelect(form, "selBYear", y);
     setTimeout(() => {
-      const nextBtn =
-        document.getElementById("Next") ||
-        document.querySelector('button[name="Next"]') ||
-        document.querySelector('input[name="Next"]');
+      setSelect(form, "selBMonth", m);
+      setTimeout(() => {
+        setSelect(form, "selBDay", d);
+      }, 100);
+    }, 100);
 
+    if (masterData.jenis_kelamin) {
+      clickRadio(
+        form,
+        "rdoGender",
+        masterData.jenis_kelamin.toLowerCase().includes("laki") ? "2" : "1"
+      );
+    }
+
+    clickRadio(form, "rdoNation", "0");
+    setSelect(form, "selNation", "Indonesia");
+  };
+
+  const inputDataUjian = (form) => {
+    if (jenisUjian === "JFT") {
+      clickRadio(form, "rdoLang", "0");
+      setSelect(form, "selLang", "Indonesian");
+
+      clickCheck(form, "chkOccupation", "M");
+      setSelect(form, "selTraveling", "No, I have not been to Japan before");
+      setSelect(form, "selStudy", "Over 300 hours");
+      clickCheck(form, "chkCBT", "A");
+      clickCheck(form, "chkTextbook", "A");
+      clickCheck(form, "chkWebSite", "A");
+    }
+  };
+
+  const clickNext = () => {
+    if (!flags.autoInput) return;
+
+    setTimeout(() => {
+      const nextBtn = document.getElementById("Next");
       if (nextBtn) {
         console.log("[BOT] Klik Berikutnya...");
         nextBtn.click();
-      } else {
-        console.warn("[BOT] Tombol Next tidak ditemukan");
       }
     }, 1200);
-  }
+  };
+
+  // =========================
+  // RUN
+  // =========================
+  waitForForm((form) => {
+    inputDataUmum(form);
+    inputDataUjian(form);
+    clickNext();
+  });
 })();
