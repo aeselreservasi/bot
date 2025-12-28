@@ -57,7 +57,7 @@
     } else if (path.includes("/Reserve/Attention")) {
       /* ============ ATTENTION ============ */
       retry(() => {
-        const btn = document.querySelector(`input[onclick*="agree"]`) || document.querySelector(`button[onclick*="agree"]`);
+        const btn = document.querySelector(`button[onclick*="agree('ExamSelect')"]`);
 
         if (!btn) return false;
 
