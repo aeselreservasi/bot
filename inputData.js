@@ -1,17 +1,17 @@
 (function () {
   const masterData = window.__BOT_DATA__;
-  if (!masterData) return;
+  if (!masterData) return console.error("[BOT] Data __BOT_DATA__ tidak ditemukan.");
 
   const flags = masterData.auto_flags || {};
   const jenisUjian = masterData.jenis_ujian_kode;
   
   const setVal = (name, val) => {
+    if (!val) return; // Jangan set jika nilai kosong
     const el = document.querySelector(`select[name="${name}"]`);
     if (el) {
-      // Hilangkan nol di depan jika website tidak menemukannya (misal: "01" jadi "1")
       const optionExists = el.querySelector(`option[value="${val}"]`);
-      if (!optionExists && val.startsWith("0")) {
-        val = val.substring(1); 
+      if (!optionExists && val.toString().startsWith("0")) {
+        val = val.toString().substring(1); 
       }
       el.value = val;
       el.dispatchEvent(new Event('change', { bubbles: true }));
@@ -19,51 +19,60 @@
   };
 
   function inputDataUmum() {
+    // 1. PENGAMAN TANGGAL LAHIR
     if (masterData.tanggal_lahir) {
       console.log("[BOT] Memproses Tanggal Lahir:", masterData.tanggal_lahir);
-
-      // Regex untuk split berdasarkan spasi, strip, atau garis miring
       let parts = masterData.tanggal_lahir.split(/[- /]/);
-      let d, m, y;
+      
+      if (parts.length >= 3) {
+        let d, m, y;
+        if (parts[0].length === 4) { [y, m, d] = parts; } 
+        else { [d, m, y] = parts; }
 
-      // Deteksi format: YYYY-MM-DD atau DD-MM-YYYY
-      if (parts[0].length === 4) {
-        [y, m, d] = parts;
+        const listBulan = {
+          january: "01", february: "02", march: "03", april: "04", may: "05", june: "06",
+          july: "07", august: "08", september: "09", october: "10", november: "11", december: "12",
+          januari: "01", februari: "02", maret: "03", april: "04", mei: "05", juni: "06", juli: "07", agustus: "08", september: "09", oktober: "10", november: "11", desember: "12",
+          jan: "01", feb: "02", mar: "03", apr: "04", mei: "05", jun: "06", jul: "07", ags: "08", sep: "09", okt: "10", nov: "11", des: "12"
+        };
+
+        let monthVal = "";
+        if (isNaN(m)) {
+          // Jika m adalah teks, pastikan tidak undefined sebelum toLowerCase
+          monthVal = m ? listBulan[m.toLowerCase()] : "";
+        } else {
+          monthVal = m.toString().padStart(2, "0");
+        }
+
+        if (y && monthVal && d) {
+          setVal("selBYear", y);
+          setVal("selBMonth", monthVal);
+          setVal("selBDay", d.toString().padStart(2, "0"));
+        }
       } else {
-        [d, m, y] = parts;
+        console.warn("[BOT] Format tanggal lahir salah atau tidak lengkap.");
       }
-
-      const listBulan = {
-        january: "01", february: "02", march: "03", april: "04", may: "05", june: "06",
-        july: "07", august: "08", september: "09", october: "10", november: "11", december: "12",
-        januari: "01", februari: "02", maret: "03", mei: "05", juni: "06", juli: "07", agustus: "08", september: "09", oktober: "10", november: "11", desember: "12",
-        jan: "01", feb: "02", mar: "03", apr: "04", mei: "05", jun: "06", jul: "07", ags: "08", sep: "09", okt: "10", nov: "11", des: "12"
-      };
-
-      // Konversi bulan jika inputnya adalah teks (Januari/Jan)
-      let monthVal = isNaN(m) ? listBulan[m.toLowerCase()] : m.toString().padStart(2, "0");
-      let dayVal = d.toString().padStart(2, "0");
-
-      console.log(`[BOT] Setting: Year=${y}, Month=${monthVal}, Day=${dayVal}`);
-
-      setVal("selBYear", y);
-      setVal("selBMonth", monthVal);
-      setVal("selBDay", dayVal);
     }
 
-    // Gender & Nation
-    const isLaki = masterData.jenis_kelamin?.toLowerCase().includes("laki");
-    const genderVal = isLaki ? "2" : "1";
-    document.querySelector(`input[name="rdoGender"][value="${genderVal}"]`)?.click();
-    
+    // 2. PENGAMAN JENIS KELAMIN
+    if (masterData.jenis_kelamin) {
+      const isLaki = masterData.jenis_kelamin.toLowerCase().includes("laki");
+      const genderVal = isLaki ? "2" : "1";
+      const genderEl = document.querySelector(`input[name="rdoGender"][value="${genderVal}"]`);
+      if (genderEl) genderEl.click();
+    } else {
+      console.warn("[BOT] Data jenis_kelamin kosong.");
+    }
+
+    // 3. BANGSA
     document.querySelector(`input[name="rdoNation"]`)?.click();
     setVal("selNation", "Indonesia");
   }
 
-  // --- Jalankan Logic ---
+  // JALANKAN
   inputDataUmum();
 
-  // Mapping Survey (JFT/PM/dll) sesuai kode sebelumnya
+  // Mapping Survey (Hanya jika elemen ada)
   if (jenisUjian === "JFT") {
     document.querySelector(`input[name="rdoLang"]`)?.click();
     setVal("selLang", "Indonesian");
@@ -74,14 +83,16 @@
     document.querySelector('input[name="chkTextbook"][value="A"]')?.click();
     document.querySelector('input[name="chkWebSite"][value="A"]')?.click();
     setVal("selStatus", "A");
-  } 
-  // ... (tambahkan else if untuk jenis ujian lain jika perlu)
+  }
 
-  // Klik Next
+  // KLIK NEXT
   if (flags.autoInput) {
     setTimeout(() => {
-      console.log("[BOT] Mencoba klik Next...");
-      document.getElementById("Next")?.click();
-    }, 1500); // Beri waktu lebih lama agar validasi form selesai
+      const btn = document.getElementById("Next");
+      if (btn) {
+        console.log("[BOT] Klik Next...");
+        btn.click();
+      }
+    }, 1500);
   }
 })();
