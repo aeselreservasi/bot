@@ -29,9 +29,7 @@
 
       chk.click();
 
-      const btn =
-        document.querySelector(`input[onclick^="checkPolicy"]`) ||
-        document.querySelector(`button[onclick^="checkPolicy"]`);
+      const btn = document.querySelector(`input[onclick^="checkPolicy"]`) || document.querySelector(`button[onclick^="checkPolicy"]`);
 
       if (!btn) return false;
 
@@ -39,14 +37,11 @@
       console.log("[Check] Policy accepted");
       return true;
     });
-  }
+  } else if (path.includes("/Reserve/PrivateChk")) {
 
   /* ========= PRIVATE CHECK ========= */
-  else if (path.includes("/Reserve/PrivateChk")) {
     retry(() => {
-      const btn =
-        document.querySelector(`input[onclick="javascript:Next('./Attention')"]`) ||
-        document.querySelector(`button[onclick="javascript:Next('./Attention')"]`);
+      const btn = document.querySelector(`input[onclick="javascript:Next('./Attention')"]`) || document.querySelector(`button[onclick="javascript:Next('./Attention')"]`);
 
       if (!btn) return false;
 
@@ -54,19 +49,26 @@
       console.log("[Check] PrivateChk passed");
       return true;
     });
-  }
+  } else if (path.includes("/Reserve/Attention")) {
 
   /* ========= ATTENTION ========= */
-  else if (path.includes("/Reserve/Attention")) {
     retry(() => {
-      const btn =
-        document.querySelector(`input[onclick="agree('ExamSelect')"]`) ||
-        document.querySelector(`button[onclick="agree('ExamSelect')"]`);
+      if (typeof window.agree === "function") {
+        console.log("[Check] Calling agree('ExamSelect')");
+        window.agree("ExamSelect");
+        return true;
+      }
+
+      // fallback terakhir
+      const btn = document.querySelector(`button[onclick="agree('ExamSelect')"]`) || document.querySelector(`input[onclick="agree('ExamSelect')"]`);
 
       if (!btn) return false;
 
-      btn.click();
-      console.log("[Check] Attention agreed");
+      btn.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+      btn.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+      btn.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+      console.log("[Check] Attention clicked via MouseEvent");
       return true;
     });
   }
