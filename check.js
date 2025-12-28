@@ -1,9 +1,7 @@
 (function () {
   "use strict";
 
-  /* ============ CONFIG ============ */
   const ENABLED = window.myAppData?.flags?.autoCheck;
-
   if (!ENABLED) {
     console.log("[Check] autoCheck disabled");
     return;
@@ -12,7 +10,6 @@
   const path = location.pathname;
   console.log("[Check] Running on:", path);
 
-  /* ============ HELPER ============ */
   function retry(fn, times = 10, delay = 500) {
     const timer = setInterval(() => {
       try {
@@ -24,46 +21,53 @@
     }, delay);
   }
 
-  /* ============ POLICY ============ */
+  /* ========= POLICY ========= */
   if (path.includes("/Reserve/Policy")) {
     retry(() => {
       const chk = document.getElementById("chkPL");
       if (!chk) return false;
 
       chk.click();
-      console.log("[Check] Policy checkbox checked");
 
-      const btn = document.querySelector(`input[onclick*="checkPolicy"]`) || document.querySelector(`button[onclick*="checkPolicy"]`);
-
-      if (btn) {
-        btn.click();
-        console.log("[Check] Go to PrivateChk");
-        return true;
-      }
-      return false;
-    });
-  } else if (path.includes("/Reserve/PrivateChk")) {
-    /* ============ PRIVATE CHECK ============ */
-    retry(() => {
-      const btn = document.querySelector(`input[onclick*="Next('./Attention')"]`) || document.querySelector(`button[onclick*="Next('./Attention')"]`);
+      const btn =
+        document.querySelector(`input[onclick^="checkPolicy"]`) ||
+        document.querySelector(`button[onclick^="checkPolicy"]`);
 
       if (!btn) return false;
 
       btn.click();
-      console.log("[Check] Go to Attention");
+      console.log("[Check] Policy accepted");
       return true;
     });
   }
-    } else if (path.includes("/Reserve/Attention")) {
-      /* ============ ATTENTION ============ */
-      retry(() => {
-        const btn = document.querySelector(`button[onclick*="agree('ExamSelect')"]`);
 
-        if (!btn) return false;
+  /* ========= PRIVATE CHECK ========= */
+  else if (path.includes("/Reserve/PrivateChk")) {
+    retry(() => {
+      const btn =
+        document.querySelector(`input[onclick="javascript:Next('./Attention')"]`) ||
+        document.querySelector(`button[onclick="javascript:Next('./Attention')"]`);
 
-        btn.click();
-        console.log("[Check] Agree clicked (delayed)");
-        return true;
-      });
-    }
+      if (!btn) return false;
+
+      btn.click();
+      console.log("[Check] PrivateChk passed");
+      return true;
+    });
+  }
+
+  /* ========= ATTENTION ========= */
+  else if (path.includes("/Reserve/Attention")) {
+    retry(() => {
+      const btn =
+        document.querySelector(`input[onclick="agree('ExamSelect')"]`) ||
+        document.querySelector(`button[onclick="agree('ExamSelect')"]`);
+
+      if (!btn) return false;
+
+      btn.click();
+      console.log("[Check] Attention agreed");
+      return true;
+    });
+  }
 })();
