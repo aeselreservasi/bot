@@ -1,110 +1,141 @@
 (function () {
   const masterData = window.__BOT_DATA__;
-  if (!masterData) return console.error("[BOT] Data __BOT_DATA__ tidak ditemukan.");
+  if (!masterData) {
+    console.error("[BOT] Data __BOT_DATA__ tidak ditemukan.");
+    return;
+  }
 
   const flags = masterData.auto_flags || {};
   const jenisUjian = masterData.jenis_ujian_kode;
-  console.log("%c[Logic] Memproses Form JFT-Basic", "color: #00dbde; font-weight: bold;");
 
-  // --- Helper Fungsi ---
-  const setVal = (name, val) => {
+  console.log(
+    "%c[Logic] Memproses Form JFT-Basic",
+    "color:#00dbde;font-weight:bold"
+  );
+
+  // =========================
+  // Helper Functions
+  // =========================
+
+  const setSelect = (name, value) => {
     const el = document.querySelector(`select[name="${name}"]`);
-    if (el && val) {
-      el.value = val;
-      el.dispatchEvent(new Event("change", { bubbles: true }));
+    if (!el) {
+      console.warn(`[BOT] Select ${name} tidak ditemukan`);
+      return;
     }
+    el.value = String(value);
+    el.dispatchEvent(new Event("change", { bubbles: true }));
   };
 
   const clickRadio = (name, value) => {
-    const el = document.querySelector(`input[name="${name}"][value="${value}"]`);
-    if (el) el.click();
-  };
-
-  const clickCheck = (name, value) => {
-    const el = document.querySelector(`input[name="${name}"][value="${value}"]`);
+    const el = document.querySelector(
+      `input[type="radio"][name="${name}"][value="${value}"]`
+    );
     if (el && !el.checked) el.click();
   };
 
-  // --- 1. Tanggal Lahir (Menggunakan format ISO: 1997-07-29) ---
+  const clickCheck = (name, value) => {
+    const el = document.querySelector(
+      `input[type="checkbox"][name="${name}"][value="${value}"]`
+    );
+    if (el && !el.checked) el.click();
+  };
+
+  // =========================
+  // 1. DATA UMUM
+  // =========================
+
   function inputDataUmum() {
-    const tglIso = masterData.tanggal_lahir_iso;
-    if (tglIso && tglIso.includes("-")) {
-      const [y, m, d] = tglIso.split("-");
+    // ---- Tanggal Lahir (CRITICAL FIX) ----
+    const iso = masterData.tanggal_lahir_iso;
+    if (iso && iso.includes("-")) {
+      const [y, m, d] = iso.split("-").map(Number);
+
       console.log(`[BOT] Input Tanggal: ${y}-${m}-${d}`);
-      setVal("selBYear", y);
-      setVal("selBMonth", m);
-      setVal("selBDay", d);
+
+      // WAJIB urut + delay agar ValidDate() lolos
+      setSelect("selBYear", y);
+
+      setTimeout(() => {
+        setSelect("selBMonth", m);
+
+        setTimeout(() => {
+          setSelect("selBDay", d);
+        }, 100);
+      }, 100);
     }
 
-    // --- 2. Jenis Kelamin (Laki-laki=2, Perempuan=1) ---
+    // ---- Jenis Kelamin ----
     if (masterData.jenis_kelamin) {
       const jk = masterData.jenis_kelamin.toLowerCase();
-      if (jk.includes("laki")) clickRadio("rdoGender", "2");
-      else clickRadio("rdoGender", "1");
+      clickRadio("rdoGender", jk.includes("laki") ? "2" : "1");
     }
 
-    // --- 3. Kebangsaan & Bahasa ---
-    // Klik radio pendamping dropdown terlebih dahulu
+    // ---- Kebangsaan ----
     clickRadio("rdoNation", "0");
-    setVal("selNation", "Indonesia");
+    setSelect("selNation", "Indonesia");
   }
+
   inputDataUmum();
+
+  // =========================
+  // 2. DATA KHUSUS UJIAN
+  // =========================
+
   if (jenisUjian === "JFT") {
     clickRadio("rdoLang", "0");
-    setVal("selLang", "Indonesian");
+    setSelect("selLang", "Indonesian");
 
-    // --- 4. Survey JFT (Default Logic) ---
-    // Checklist: Tidak akan mengikuti ujian keterampilan satu pun
-    clickCheck("chkOccupation", "M");
-
-    // Dropdown: Belum pernah ke Jepang
-    setVal("selTraveling", "No, I have not been to Japan before");
-
-    // Dropdown: Belum pernah belajar 300 jam
-    setVal("selStudy", "Over 300 hours");
-
-    // Checklist CBT: Belum pernah
+    // Survey JFT
+    clickCheck("chkOccupation", "M"); // Tidak ikut ujian skill
+    setSelect("selTraveling", "No, I have not been to Japan before");
+    setSelect("selStudy", "Over 300 hours");
     clickCheck("chkCBT", "A");
-
-    // Checklist Media: Irodori
     clickCheck("chkTextbook", "A");
-
-    // Checklist Website: Belum pernah
     clickCheck("chkWebSite", "A");
   } else if (jenisUjian === "PM" || jenisUjian === "RESTO") {
-    setVal("selJob", "University student/graduate student");
+    setSelect("selJob", "University student/graduate student");
     clickRadio("chkResidence", "A");
     clickRadio("chkWork", "A");
     clickRadio("rdoTaken", "This is the first time.");
-    setVal("selLearn", "I knew that there were learning texts, but I didn't know where I could find them.");
+    setSelect(
+      "selLearn",
+      "I knew that there were learning texts, but I didn't know where I could find them."
+    );
     clickRadio("chkKnows", "A");
     clickRadio("rdoAbility", "Have passed");
   } else if (jenisUjian === "KGINDO" || jenisUjian === "KGJAPAN") {
-    setVal("selAcademic", "High school graduate");
-    setVal("SelExp", "I don't have any work experience.");
-    setVal("selVisit", "No, I have not been to Japan before");
-    setVal("selNursing1", "less than 1 month");
-    setVal("selNursing2", "self study");
-    setVal("selJpLevel", "JFT-Basic");
+    setSelect("selAcademic", "High school graduate");
+    setSelect("SelExp", "I don't have any work experience.");
+    setSelect("selVisit", "No, I have not been to Japan before");
+    setSelect("selNursing1", "less than 1 month");
+    setSelect("selNursing2", "self study");
+    setSelect("selJpLevel", "JFT-Basic");
   } else if (jenisUjian === "PERTANIAN" || jenisUjian === "PETERNAKAN") {
-    setVal("selTraveling", "No");
-    setVal("selStudy", "80 hours or less");
-    setVal("selEng", "None");
-    setVal("selAgre", "Agree");
-    setVal("selStatus", "I will not take the test in Japan.");
+    setSelect("selTraveling", "No");
+    setSelect("selStudy", "80 hours or less");
+    setSelect("selEng", "None");
+    setSelect("selAgre", "Agree");
+    setSelect("selStatus", "A");
   }
-  // --- 5. Tombol Berikutnya ---
+
+  // =========================
+  // 3. NEXT BUTTON
+  // =========================
+
   if (flags.autoInput) {
     setTimeout(() => {
-      // Mencari tombol 'Next' atau 'Berikutnya'
-      const nextBtn = document.getElementById("Next") || document.querySelector('input[name="Next"]') || document.querySelector('input[value="Berikutnya"]');
+      const nextBtn =
+        document.getElementById("Next") ||
+        document.querySelector('button[name="Next"]') ||
+        document.querySelector('input[name="Next"]');
 
       if (nextBtn) {
         console.log("[BOT] Klik Berikutnya...");
         nextBtn.click();
       } else {
-        console.warn("[BOT] Tombol Next tidak ditemukan.");
+        console.warn("[BOT] Tombol Next tidak ditemukan");
       }
-    }, 1000); // Delay 1 detik agar form sempat memproses event change
+    }, 1200);
   }
 })();
