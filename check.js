@@ -2,18 +2,14 @@
   "use strict";
 
   /* ============ CONFIG ============ */
-  const appData =
-    window.myAppData ||
-    JSON.parse(localStorage.getItem("bot_master_data") || "{}");
-
-  const ENABLED = appData?.auto_flags?.autoCheck;
+  const ENABLED = window.myAppData?.flags?.autoCheck;
 
   if (!ENABLED) {
     console.log("[Check] autoCheck disabled");
     return;
   }
 
-  const path = location.pathname.toLowerCase();
+  const path = location.pathname;
   console.log("[Check] Running on:", path);
 
   /* ============ HELPER ============ */
@@ -28,17 +24,8 @@
     }, delay);
   }
 
-  function humanClick(btn, label) {
-    const delay = 1200 + Math.random() * 800;
-    console.log(`[Check] ${label} → waiting ${Math.round(delay)}ms`);
-    setTimeout(() => {
-      btn.click();
-      console.log(`[Check] ${label} clicked`);
-    }, delay);
-  }
-
   /* ============ POLICY ============ */
-  if (path.includes("/reserve/policy")) {
+  if (path.includes("/Reserve/Policy")) {
     retry(() => {
       const chk = document.getElementById("chkPL");
       if (!chk) return false;
@@ -46,42 +33,37 @@
       chk.click();
       console.log("[Check] Policy checkbox checked");
 
-      const btn =
-        document.querySelector(`input[onclick*="checkPolicy"]`) ||
-        document.querySelector(`button[onclick*="checkPolicy"]`);
+      const btn = document.querySelector(`input[onclick*="checkPolicy"]`) || document.querySelector(`button[onclick*="checkPolicy"]`);
 
-      if (!btn) return false;
-
-      humanClick(btn, "Go to PrivateChk");
-      return true;
+      if (btn) {
+        btn.click();
+        console.log("[Check] Go to PrivateChk");
+        return true;
+      }
+      return false;
     });
-  }
-
-  /* ============ PRIVATE CHECK ============ */
-  else if (path.includes("/reserve/privatechk")) {
+  } else if (path.includes("/Reserve/PrivateChk")) {
+    /* ============ PRIVATE CHECK ============ */
     retry(() => {
-      const btn =
-        document.querySelector(`input[onclick*="Next('./Attention')"]`) ||
-        document.querySelector(`button[onclick*="Next('./Attention')"]`);
+      const btn = document.querySelector(`input[onclick*="Next('./Attention')"]`) || document.querySelector(`button[onclick*="Next('./Attention')"]`);
 
       if (!btn) return false;
 
-      humanClick(btn, "Go to Attention");
+      btn.click();
+      console.log("[Check] Go to Attention");
       return true;
     });
   }
+  //   } else if (path.includes("/Reserve/Attention")) {
+  //     /* ============ ATTENTION ============ */
+  //     retry(() => {
+  //       const btn = document.querySelector(`input[onclick*="agree"]`) || document.querySelector(`button[onclick*="agree"]`);
 
-  /* ============ ATTENTION ============ */
-  else if (path.includes("/reserve/attention")) {
-    retry(() => {
-      const btn =
-        document.querySelector(`button[onclick="agree('ExamSelect')"]`) ||
-        document.querySelector(`input[onclick="agree('ExamSelect')"]`);
+  //       if (!btn) return false;
 
-      if (!btn) return false;
-
-      humanClick(btn, "Agree & go to ExamSelect");
-      return true;
-    });
-  }
+  //       btn.click();
+  //       console.log("[Check] Agree clicked (delayed)");
+  //       return true;
+  //     });
+  //   }
 })();
