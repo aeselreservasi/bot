@@ -4,95 +4,107 @@
 
   const flags = masterData.auto_flags || {};
   const jenisUjian = masterData.jenis_ujian_kode;
-  
+  console.log("%c[Logic] Memproses Form JFT-Basic", "color: #00dbde; font-weight: bold;");
+
+  // --- Helper Fungsi ---
   const setVal = (name, val) => {
-    if (!val) return; // Jangan set jika nilai kosong
     const el = document.querySelector(`select[name="${name}"]`);
-    if (el) {
-      const optionExists = el.querySelector(`option[value="${val}"]`);
-      if (!optionExists && val.toString().startsWith("0")) {
-        val = val.toString().substring(1); 
-      }
+    if (el && val) {
       el.value = val;
-      el.dispatchEvent(new Event('change', { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
     }
   };
 
+  const clickRadio = (name, value) => {
+    const el = document.querySelector(`input[name="${name}"][value="${value}"]`);
+    if (el) el.click();
+  };
+
+  const clickCheck = (name, value) => {
+    const el = document.querySelector(`input[name="${name}"][value="${value}"]`);
+    if (el && !el.checked) el.click();
+  };
+
+  // --- 1. Tanggal Lahir (Menggunakan format ISO: 1997-07-29) ---
   function inputDataUmum() {
-    // 1. PENGAMAN TANGGAL LAHIR
-    if (masterData.tanggal_lahir) {
-      console.log("[BOT] Memproses Tanggal Lahir:", masterData.tanggal_lahir);
-      let parts = masterData.tanggal_lahir.split(/[- /]/);
-      
-      if (parts.length >= 3) {
-        let d, m, y;
-        if (parts[0].length === 4) { [y, m, d] = parts; } 
-        else { [d, m, y] = parts; }
-
-        const listBulan = {
-          january: "01", february: "02", march: "03", april: "04", may: "05", june: "06",
-          july: "07", august: "08", september: "09", october: "10", november: "11", december: "12",
-          januari: "01", februari: "02", maret: "03", april: "04", mei: "05", juni: "06", juli: "07", agustus: "08", september: "09", oktober: "10", november: "11", desember: "12",
-          jan: "01", feb: "02", mar: "03", apr: "04", mei: "05", jun: "06", jul: "07", ags: "08", sep: "09", okt: "10", nov: "11", des: "12"
-        };
-
-        let monthVal = "";
-        if (isNaN(m)) {
-          // Jika m adalah teks, pastikan tidak undefined sebelum toLowerCase
-          monthVal = m ? listBulan[m.toLowerCase()] : "";
-        } else {
-          monthVal = m.toString().padStart(2, "0");
-        }
-
-        if (y && monthVal && d) {
-          setVal("selBYear", y);
-          setVal("selBMonth", monthVal);
-          setVal("selBDay", d.toString().padStart(2, "0"));
-        }
-      } else {
-        console.warn("[BOT] Format tanggal lahir salah atau tidak lengkap.");
-      }
+    const tglIso = masterData.tanggal_lahir_iso;
+    if (tglIso && tglIso.includes("-")) {
+      const [y, m, d] = tglIso.split("-");
+      console.log(`[BOT] Input Tanggal: ${y}-${m}-${d}`);
+      setVal("selBYear", y);
+      setVal("selBMonth", m);
+      setVal("selBDay", d);
     }
 
-    // 2. PENGAMAN JENIS KELAMIN
+    // --- 2. Jenis Kelamin (Laki-laki=2, Perempuan=1) ---
     if (masterData.jenis_kelamin) {
-      const isLaki = masterData.jenis_kelamin.toLowerCase().includes("laki");
-      const genderVal = isLaki ? "2" : "1";
-      const genderEl = document.querySelector(`input[name="rdoGender"][value="${genderVal}"]`);
-      if (genderEl) genderEl.click();
-    } else {
-      console.warn("[BOT] Data jenis_kelamin kosong.");
+      const jk = masterData.jenis_kelamin.toLowerCase();
+      if (jk.includes("laki")) clickRadio("rdoGender", "2");
+      else clickRadio("rdoGender", "1");
     }
 
-    // 3. BANGSA
-    document.querySelector(`input[name="rdoNation"]`)?.click();
+    // --- 3. Kebangsaan & Bahasa ---
+    // Klik radio pendamping dropdown terlebih dahulu
+    clickRadio("rdoNation", "0");
     setVal("selNation", "Indonesia");
   }
-
-  // JALANKAN
   inputDataUmum();
-
-  // Mapping Survey (Hanya jika elemen ada)
   if (jenisUjian === "JFT") {
-    document.querySelector(`input[name="rdoLang"]`)?.click();
+    clickRadio("rdoLang", "0");
     setVal("selLang", "Indonesian");
-    document.getElementsByName("chkOccupation").forEach(el => { if(el.value !== "O") el.click(); });
-    setVal("selTraveling", "No, I have not been to Japan before");
-    setVal("selStudy", "Over 300 hours");
-    document.querySelector('input[name="chkCBT"][value="A"]')?.click();
-    document.querySelector('input[name="chkTextbook"][value="A"]')?.click();
-    document.querySelector('input[name="chkWebSite"][value="A"]')?.click();
-    setVal("selStatus", "A");
-  }
 
-  // KLIK NEXT
+    // --- 4. Survey JFT (Default Logic) ---
+    // Checklist: Tidak akan mengikuti ujian keterampilan satu pun
+    clickCheck("chkOccupation", "M");
+
+    // Dropdown: Belum pernah ke Jepang
+    setVal("selTraveling", "No, I have not been to Japan before");
+
+    // Dropdown: Belum pernah belajar 300 jam
+    setVal("selStudy", "Over 300 hours");
+
+    // Checklist CBT: Belum pernah
+    clickCheck("chkCBT", "A");
+
+    // Checklist Media: Irodori
+    clickCheck("chkTextbook", "A");
+
+    // Checklist Website: Belum pernah
+    clickCheck("chkWebSite", "A");
+  } else if (jenisUjian === "PM" || jenisUjian === "RESTO") {
+    setVal("selJob", "University student/graduate student");
+    clickRadio("chkResidence", "A");
+    clickRadio("chkWork", "A");
+    clickRadio("rdoTaken", "This is the first time.");
+    setVal("selLearn", "I knew that there were learning texts, but I didn't know where I could find them.");
+    clickRadio("chkKnows", "A");
+    clickRadio("rdoAbility", "Have passed");
+  } else if (jenisUjian === "KGINDO" || jenisUjian === "KGJAPAN") {
+    setVal("selAcademic", "High school graduate");
+    setVal("SelExp", "I don't have any work experience.");
+    setVal("selVisit", "No, I have not been to Japan before");
+    setVal("selNursing1", "less than 1 month");
+    setVal("selNursing2", "self study");
+    setVal("selJpLevel", "JFT-Basic");
+  } else if (jenisUjian === "PERTANIAN" || jenisUjian === "PETERNAKAN") {
+    setVal("selTraveling", "No");
+    setVal("selStudy", "80 hours or less");
+    setVal("selEng", "None");
+    setVal("selAgre", "Agree");
+    setVal("selStatus", "I will not take the test in Japan.");
+  }
+  // --- 5. Tombol Berikutnya ---
   if (flags.autoInput) {
     setTimeout(() => {
-      const btn = document.getElementById("Next");
-      if (btn) {
-        console.log("[BOT] Klik Next...");
-        btn.click();
+      // Mencari tombol 'Next' atau 'Berikutnya'
+      const nextBtn = document.getElementById("Next") || document.querySelector('input[name="Next"]') || document.querySelector('input[value="Berikutnya"]');
+
+      if (nextBtn) {
+        console.log("[BOT] Klik Berikutnya...");
+        nextBtn.click();
+      } else {
+        console.warn("[BOT] Tombol Next tidak ditemukan.");
       }
-    }, 1500);
+    }, 1000); // Delay 1 detik agar form sempat memproses event change
   }
 })();
