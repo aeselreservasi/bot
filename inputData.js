@@ -63,9 +63,9 @@
 
     setSelect(form, "selBYear", y);
     setTimeout(() => {
-      setSelect(form, "selBMonth", m);
+      setSelect(form, "selBMonth", m.padStart(2, "0"));
       setTimeout(() => {
-        setSelect(form, "selBDay", d);
+        setSelect(form, "selBDay", d.padStart(2, "0"));
       }, 100);
     }, 100);
 
