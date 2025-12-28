@@ -1,61 +1,60 @@
 (function () {
-  // 1. Ambil data dari variabel global yang disiapkan injector
   const masterData = window.__BOT_DATA__;
-
-  if (!masterData) {
-    console.error("[BOT] Data __BOT_DATA__ tidak ditemukan di window.");
-    return;
-  }
+  if (!masterData) return console.error("[BOT] Data tidak ditemukan.");
 
   const jenisUjianKode = masterData.jenis_ujian_kode;
-  console.log("[BOT] Menjalankan mapping untuk ujian:", jenisUjianKode);
 
-  // Pastikan listUjian tersedia (biasanya didefinisikan di awal skrip ini atau global)
-  // Jika belum ada, Anda harus mendefinisikannya di sini.
-  const listUjian = window.listUjian || {
-    "F10-E10J": "JFT",
-    "T20-J11J": "PM",
-    "T10-J11J": "RESTO",
-    "JH0-I11J": "KGINDO",
-    "JH0-I12J": "KGJAPAN",
-    "NC0-I11J": "PERTANIAN",
-    "NC0-I12J": "PETERNAKAN",
+  // Mapping kode JFT ke value option
+  const listUjian = {
+    JFT: "F10-E10J",
+    PM: "T20-J11J", // Sesuaikan dengan value asli di web
+    RESTO: "T10-J11J",
+    KGINDO: "JH0-I11J",
+    KGJAPAN: "JH0-J12J",
+    PERTANIAN: "NC0-I11J",
+    PETERNAKAN: "NC0-I12J",
   };
 
-  // 2. Reverse lookup: cari value option berdasarkan kode ujian
-  let examValue = Object.keys(listUjian).find((key) => listUjian[key] === jenisUjianKode);
+  let examValue = listUjian[jenisUjianKode];
+  if (!examValue) return console.warn("[BOT] Mapping tidak ditemukan untuk:", jenisUjianKode);
 
-  if (!examValue) {
-    console.warn("[BOT] Mapping exam tidak ditemukan untuk:", jenisUjianKode);
-    return;
-  }
+  console.log(`[BOT] Mencari dropdown untuk value: ${examValue}...`);
 
-  // Legacy fix untuk Caregiver
-  if (examValue === "JH0-I12J") {
-    examValue = "JH0-J12J";
-  }
+  let attempts = 0;
+  const maxAttempts = 15; // Coba terus selama 7.5 detik
 
-  // 3. Eksekusi pemilihan di Dropdown
-  const examEl = document.querySelector(`#select1 > option[value="${examValue}"]`);
+  const trySelect = setInterval(() => {
+    attempts++;
 
-  if (examEl) {
-    examEl.selected = true;
-    console.log("[BOT] Berhasil memilih:", examValue);
+    // Gunakan selector yang lebih fleksibel (tanpa tanda >)
+    const selectEl = document.getElementById("select1");
+    const optionEl = selectEl?.querySelector(`option[value="${examValue}"]`);
 
-    // Memicu event change agar website tahu ada perubahan (penting untuk web modern)
-    examEl.parentElement.dispatchEvent(new Event("change", { bubbles: true }));
+    if (optionEl) {
+      clearInterval(trySelect); // Berhenti mencoba jika sudah ketemu
 
-    // 4. Cek Auto Flags untuk Klik Tombol Next
-    const autoFlags = masterData.auto_flags || {};
-    if (autoFlags.autoExam) {
-      console.log("[BOT] Auto klik tombol 'test'...");
-      setTimeout(() => {
-        document.getElementById("test")?.click();
-      }, 500); // Beri jeda sedikit agar sistem web merespon
+      selectEl.value = examValue; // Pilih value
+
+      // Trigger event agar website merespon pilihan tersebut
+      selectEl.dispatchEvent(new Event("change", { bubbles: true }));
+      console.log(`[BOT] Berhasil memilih ${examValue} pada percobaan ke-${attempts}`);
+
+      // Cek Auto Klik
+      const autoFlags = masterData.auto_flags || {};
+      if (autoFlags.autoExam) {
+        setTimeout(() => {
+          const btn = document.getElementById("test");
+          if (btn) {
+            console.log("[BOT] Klik tombol Next...");
+            btn.click();
+          }
+        }, 800);
+      }
     } else {
-      console.log("[BOT] Auto exam dimatikan.");
+      if (attempts >= maxAttempts) {
+        clearInterval(trySelect);
+        console.error(`[BOT] Gagal menemukan option ${examValue} setelah ${maxAttempts} kali percobaan.`);
+      }
     }
-  } else {
-    console.error("[BOT] Elemen dropdown tidak ditemukan untuk value:", examValue);
-  }
+  }, 500); // Cek setiap 0.5 detik
 })();
