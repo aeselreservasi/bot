@@ -2,14 +2,18 @@
   "use strict";
 
   /* ============ CONFIG ============ */
-  const ENABLED = window.myAppData?.flags?.autoCheck;
+  const appData =
+    window.myAppData ||
+    JSON.parse(localStorage.getItem("bot_master_data") || "{}");
+
+  const ENABLED = appData?.auto_flags?.autoCheck;
 
   if (!ENABLED) {
     console.log("[Check] autoCheck disabled");
     return;
   }
 
-  const path = location.pathname;
+  const path = location.pathname.toLowerCase();
   console.log("[Check] Running on:", path);
 
   /* ============ HELPER ============ */
@@ -24,8 +28,17 @@
     }, delay);
   }
 
+  function humanClick(btn, label) {
+    const delay = 1200 + Math.random() * 800;
+    console.log(`[Check] ${label} → waiting ${Math.round(delay)}ms`);
+    setTimeout(() => {
+      btn.click();
+      console.log(`[Check] ${label} clicked`);
+    }, delay);
+  }
+
   /* ============ POLICY ============ */
-  if (path.includes("/Reserve/Policy")) {
+  if (path.includes("/reserve/policy")) {
     retry(() => {
       const chk = document.getElementById("chkPL");
       if (!chk) return false;
@@ -33,38 +46,41 @@
       chk.click();
       console.log("[Check] Policy checkbox checked");
 
-      const btn = document.querySelector(`input[onclick*="checkPolicy"]`) || document.querySelector(`button[onclick*="checkPolicy"]`);
-
-      if (btn) {
-        btn.click();
-        console.log("[Check] Go to PrivateChk");
-        return true;
-      }
-      return false;
-    });
-  } else if (path.includes("/Reserve/PrivateChk")) {
-    /* ============ PRIVATE CHECK ============ */
-    retry(() => {
-      const btn = document.querySelector(`input[onclick*="Next('./Attention')"]`) || document.querySelector(`button[onclick*="Next('./Attention')"]`);
+      const btn =
+        document.querySelector(`input[onclick*="checkPolicy"]`) ||
+        document.querySelector(`button[onclick*="checkPolicy"]`);
 
       if (!btn) return false;
 
-      btn.click();
-      console.log("[Check] Go to Attention");
+      humanClick(btn, "Go to PrivateChk");
       return true;
     });
-  } else if (path.includes("/Reserve/Attention")) {
-    /* ============ ATTENTION ============ */
+  }
+
+  /* ============ PRIVATE CHECK ============ */
+  else if (path.includes("/reserve/privatechk")) {
     retry(() => {
-      const btn = document.querySelector(`input[onclick*="agree"]`) || document.querySelector(`button[onclick*="agree"]`);
+      const btn =
+        document.querySelector(`input[onclick*="Next('./Attention')"]`) ||
+        document.querySelector(`button[onclick*="Next('./Attention')"]`);
 
       if (!btn) return false;
 
-      setTimeout(() => {
-        btn.click();
-        console.log("[Check] Agree clicked (delayed)");
-      }, 200 + Math.random() * 800);
+      humanClick(btn, "Go to Attention");
+      return true;
+    });
+  }
 
+  /* ============ ATTENTION ============ */
+  else if (path.includes("/reserve/attention")) {
+    retry(() => {
+      const btn =
+        document.querySelector(`button[onclick="agree('ExamSelect')"]`) ||
+        document.querySelector(`input[onclick="agree('ExamSelect')"]`);
+
+      if (!btn) return false;
+
+      humanClick(btn, "Agree & go to ExamSelect");
       return true;
     });
   }
