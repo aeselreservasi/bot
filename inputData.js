@@ -1,6 +1,9 @@
 (function () {
   const masterData = window.__BOT_DATA__;
-  if (!masterData) return;
+  if (!masterData) {
+    console.error("[BOT] Data __BOT_DATA__ tidak ditemukan.");
+    return;
+  }
 
   const flags = masterData.auto_flags || {};
   const jenisUjian = masterData.jenis_ujian_kode;
@@ -10,27 +13,10 @@
     "color:#00dbde;font-weight:bold"
   );
 
-  // =========================
-  // WAIT FORM
-  // =========================
-  const waitForForm = (cb, timeout = 5000) => {
-    const start = Date.now();
-    const timer = setInterval(() => {
-      if (document.forms && document.forms.form) {
-        clearInterval(timer);
-        cb(document.forms.form);
-      } else if (Date.now() - start > timeout) {
-        clearInterval(timer);
-        console.error("[BOT] Form tidak muncul (timeout)");
-      }
-    }, 100);
-  };
+  /* ================= HELPER ================= */
 
-  // =========================
-  // HELPERS (FORM-SCOPED)
-  // =========================
-  const setSelect = (form, name, val) => {
-    const el = form[name];
+  const setVal = (name, val) => {
+    const el = document.querySelector(`select[name="${name}"]`);
     if (!el) {
       console.warn(`[BOT] Select ${name} tidak ditemukan`);
       return;
@@ -39,80 +25,116 @@
     el.dispatchEvent(new Event("change", { bubbles: true }));
   };
 
-  const clickRadio = (form, name, val) => {
-    const el = [...form.querySelectorAll(`input[name="${name}"]`)]
-      .find(r => r.value === val);
+  const clickRadio = (name, value) => {
+    const el = document.querySelector(
+      `input[type="radio"][name="${name}"][value="${value}"]`
+    );
     if (el && !el.checked) el.click();
   };
 
-  const clickCheck = (form, name, val) => {
-    const el = [...form.querySelectorAll(`input[name="${name}"]`)]
-      .find(c => c.value === val);
+  const clickCheck = (name, value) => {
+    const el = document.querySelector(
+      `input[type="checkbox"][name="${name}"][value="${value}"]`
+    );
     if (el && !el.checked) el.click();
   };
 
-  // =========================
-  // INPUT DATA
-  // =========================
-  const inputDataUmum = (form) => {
-    const [y, m, d] = masterData.tanggal_lahir_iso
-      .split("-")
-      .map(Number);
+  /* ================= RETRY BULAN (FIX UTAMA) ================= */
 
-    console.log(`[BOT] Input Tanggal: ${y}-${m}-${d}`);
+  const setMonthWithRetry = (month, retries = 3, delay = 120) => {
+    const el = document.querySelector('select[name="selBMonth"]');
+    if (!el) {
+      console.warn("[BOT] selBMonth tidak ditemukan");
+      return;
+    }
 
-    setSelect(form, "selBYear", y);
+    const val = String(month).padStart(2, "0");
+
+    el.value = val;
+    el.dispatchEvent(new Event("change", { bubbles: true }));
+
     setTimeout(() => {
-      setSelect(form, "selBMonth", m.padStart(2, "0"));
-      setTimeout(() => {
-        setSelect(form, "selBDay", d.padStart(2, "0"));
-      }, 100);
-    }, 100);
+      if (el.value !== val && retries > 0) {
+        console.warn(`[BOT] Retry set bulan (${retries})`);
+        setMonthWithRetry(val, retries - 1, delay);
+      }
+    }, delay);
+  };
 
+  /* ================= INPUT DATA UMUM ================= */
+
+  function inputDataUmum() {
+    const tglIso = masterData.tanggal_lahir_iso;
+
+    if (tglIso && tglIso.includes("-")) {
+      const [y, m, d] = tglIso.split("-");
+
+      console.log(`[BOT] Input Tanggal: ${y}-${m}-${d}`);
+
+      // Tahun
+      setVal("selBYear", y);
+
+      // Bulan (PAKAI RETRY)
+      setMonthWithRetry(m);
+
+      // Hari
+      setVal("selBDay", d.padStart(2, "0"));
+    }
+
+    // Jenis kelamin
     if (masterData.jenis_kelamin) {
-      clickRadio(
-        form,
-        "rdoGender",
-        masterData.jenis_kelamin.toLowerCase().includes("laki") ? "2" : "1"
+      const jk = masterData.jenis_kelamin.toLowerCase();
+      clickRadio("rdoGender", jk.includes("laki") ? "2" : "1");
+    }
+
+    // Kebangsaan
+    clickRadio("rdoNation", "0");
+    setVal("selNation", "Indonesia");
+  }
+
+  inputDataUmum();
+
+  /* ================= DATA KHUSUS UJIAN ================= */
+
+  if (jenisUjian === "JFT") {
+    clickRadio("rdoLang", "0");
+    setVal("selLang", "Indonesian");
+
+    clickCheck("chkOccupation", "M");
+    setVal("selTraveling", "No, I have not been to Japan before");
+    setVal("selStudy", "Over 300 hours");
+    clickCheck("chkCBT", "A");
+    clickCheck("chkTextbook", "A");
+    clickCheck("chkWebSite", "A");
+  }
+
+  /* ================= DEBUG (AMAN) ================= */
+
+  setTimeout(() => {
+    if (window.document?.form) {
+      console.log(
+        "[BOT][DOB CHECK]",
+        document.form.selBYear.value,
+        document.form.selBMonth.value,
+        document.form.selBDay.value
       );
     }
+  }, 600);
 
-    clickRadio(form, "rdoNation", "0");
-    setSelect(form, "selNation", "Indonesia");
-  };
+  /* ================= AUTO NEXT ================= */
 
-  const inputDataUjian = (form) => {
-    if (jenisUjian === "JFT") {
-      clickRadio(form, "rdoLang", "0");
-      setSelect(form, "selLang", "Indonesian");
-
-      clickCheck(form, "chkOccupation", "M");
-      setSelect(form, "selTraveling", "No, I have not been to Japan before");
-      setSelect(form, "selStudy", "Over 300 hours");
-      clickCheck(form, "chkCBT", "A");
-      clickCheck(form, "chkTextbook", "A");
-      clickCheck(form, "chkWebSite", "A");
-    }
-  };
-
-  const clickNext = () => {
-    if (!flags.autoInput) return;
-
+  if (flags.autoInput) {
     setTimeout(() => {
-      const nextBtn = document.getElementById("Next");
+      const nextBtn =
+        document.getElementById("Next") ||
+        document.querySelector('input[name="Next"]');
+
       if (nextBtn) {
         console.log("[BOT] Klik Berikutnya...");
         nextBtn.click();
+      } else {
+        console.warn("[BOT] Tombol Next tidak ditemukan");
       }
     }, 1200);
-  };
-
-  // =========================
-  // RUN
-  // =========================
-  waitForForm((form) => {
-    inputDataUmum(form);
-    inputDataUjian(form);
-    clickNext();
-  });
+  }
 })();
