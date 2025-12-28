@@ -54,16 +54,16 @@
       return true;
     });
   }
-  //   } else if (path.includes("/Reserve/Attention")) {
-  //     /* ============ ATTENTION ============ */
-  //     retry(() => {
-  //       const btn = document.querySelector(`input[onclick*="agree"]`) || document.querySelector(`button[onclick*="agree"]`);
+    } else if (path.includes("/Reserve/Attention")) {
+      /* ============ ATTENTION ============ */
+      retry(() => {
+        const btn = document.querySelector(`input[onclick*="agree"]`) || document.querySelector(`button[onclick*="agree"]`);
 
-  //       if (!btn) return false;
+        if (!btn) return false;
 
-  //       btn.click();
-  //       console.log("[Check] Agree clicked (delayed)");
-  //       return true;
-  //     });
-  //   }
+        btn.click();
+        console.log("[Check] Agree clicked (delayed)");
+        return true;
+      });
+    }
 })();
