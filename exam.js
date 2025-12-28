@@ -15,46 +15,56 @@
     PETERNAKAN: "NC0-I12J",
   };
 
-  let examValue = listUjian[jenisUjianKode];
-  if (!examValue) return console.warn("[BOT] Mapping tidak ditemukan untuk:", jenisUjianKode);
+  const targetValue = listUjian[jenisUjianKode];
+  if (!targetValue) return console.warn("[BOT] Tidak ada mapping untuk:", jenisUjianKode);
 
-  console.log(`[BOT] Mencari dropdown untuk value: ${examValue}...`);
+  console.log(`[BOT] Menunggu elemen ${targetValue} muncul...`);
 
-  let attempts = 0;
-  const maxAttempts = 15; // Coba terus selama 7.5 detik
+  // Fungsi utama untuk memilih
+  const performSelection = (selectEl, optionEl) => {
+    console.log("[BOT] Elemen ditemukan! Mencoba memilih...");
 
-  const trySelect = setInterval(() => {
-    attempts++;
+    // 1. Pilih value-nya
+    selectEl.value = targetValue;
+    optionEl.selected = true;
 
-    // Gunakan selector yang lebih fleksibel (tanpa tanda >)
+    // 2. Kirim berbagai event agar sistem web sadar ada perubahan
+    const events = ["change", "input", "blur"];
+    events.forEach((evtName) => {
+      selectEl.dispatchEvent(new Event(evtName, { bubbles: true }));
+    });
+
+    // 3. Cek apakah perlu klik otomatis (Next)
+    const autoFlags = masterData.auto_flags || {};
+    if (autoFlags.autoExam) {
+      setTimeout(() => {
+        const btn = document.getElementById("test");
+        if (btn) {
+          console.log("[BOT] Klik tombol Next (ID: test)");
+          btn.click();
+        }
+      }, 1000); // Jeda 1 detik agar pilihan benar-benar tersimpan di sistem web
+    }
+  };
+
+  // LOGIKA RETRY (Mencoba terus sampai ketemu)
+  let checkCount = 0;
+  const maxChecks = 40; // 40 kali x 250ms = 10 detik maksimal menunggu
+
+  const intervalId = setInterval(() => {
+    checkCount++;
     const selectEl = document.getElementById("select1");
-    const optionEl = selectEl?.querySelector(`option[value="${examValue}"]`);
+    const optionEl = selectEl?.querySelector(`option[value="${targetValue}"]`);
 
     if (optionEl) {
-      clearInterval(trySelect); // Berhenti mencoba jika sudah ketemu
+      clearInterval(intervalId);
+      performSelection(selectEl, optionEl);
+    } else if (checkCount >= maxChecks) {
+      clearInterval(intervalId);
+      console.error(`[BOT] Gagal total: Dropdown ${targetValue} tidak muncul setelah 10 detik.`);
 
-      selectEl.value = examValue; // Pilih value
-
-      // Trigger event agar website merespon pilihan tersebut
-      selectEl.dispatchEvent(new Event("change", { bubbles: true }));
-      console.log(`[BOT] Berhasil memilih ${examValue} pada percobaan ke-${attempts}`);
-
-      // Cek Auto Klik
-      const autoFlags = masterData.auto_flags || {};
-      if (autoFlags.autoExam) {
-        setTimeout(() => {
-          const btn = document.getElementById("test");
-          if (btn) {
-            console.log("[BOT] Klik tombol Next...");
-            btn.click();
-          }
-        }, 800);
-      }
-    } else {
-      if (attempts >= maxAttempts) {
-        clearInterval(trySelect);
-        console.error(`[BOT] Gagal menemukan option ${examValue} setelah ${maxAttempts} kali percobaan.`);
-      }
+      // EMERGENCY: Jika gagal, paksa muat ulang halaman atau beri tahu pengguna
+      // location.reload();
     }
-  }, 500); // Cek setiap 0.5 detik
+  }, 250); // Cek setiap seperempat detik agar sangat responsif
 })();
