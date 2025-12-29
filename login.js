@@ -1,41 +1,71 @@
-// GitHub: login.js
+// GitHub: login.js (FINAL – localStorage version)
 (function () {
-    // Coba ambil dari window atau unsafeWindow
-    const data = window.myAppData || (typeof unsafeWindow !== 'undefined' ? unsafeWindow.myAppData : null);
-    
-    console.log("%c[Logic] Script mulai berjalan...", "background: #444; color: #fff; padding: 2px 5px;");
+  console.log(
+    "%c[Login] Script login dijalankan",
+    "background:#333;color:#fff;padding:2px 6px;"
+  );
 
-    if (!data) {
-        console.error("[Logic] ERROR: window.myAppData tidak ditemukan!");
-        return;
-    }
+  /* =====================================================
+     CEK FLAG
+  ===================================================== */
+  const autoLogin = localStorage.getItem("autoLogin") === "true";
+  if (!autoLogin) {
+    console.log("[Login] autoLogin = false, skip");
+    return;
+  }
 
-    console.log("%c[Logic] Mencari elemen login untuk: " + data.id, "color: orange");
+  /* =====================================================
+     AMBIL USER DATA
+  ===================================================== */
+  let userData;
+  try {
+    userData = JSON.parse(localStorage.getItem("userData") || "{}");
+  } catch {
+    console.error("[Login] userData rusak");
+    return;
+  }
 
-    const timer = setInterval(() => {
-        const idField = document.querySelector("#inputPrometricID");
-        const pwField = document.querySelector("#inputPassword");
-        const loginBtn = document.querySelector('button[name="B1"]');
+  const prometricId = userData["ID Prometrik"];
+  const password = userData["Password"];
 
-        if (idField && pwField) {
-            clearInterval(timer);
-            console.log("%c[Logic] Form ditemukan!", "color: #00ff00; font-weight: bold;");
+  if (!prometricId || !password) {
+    console.error("[Login] ID / Password tidak lengkap");
+    return;
+  }
 
-            idField.value = data.id;
-            pwField.value = data.pw;
+  console.log("[Login] Siap login untuk:", prometricId);
 
-            const ev = { bubbles: true };
-            idField.dispatchEvent(new Event("input", ev));
-            pwField.dispatchEvent(new Event("input", ev));
+  /* =====================================================
+     TUNGGU FORM LOGIN
+  ===================================================== */
+  const timer = setInterval(() => {
+    const idField = document.querySelector("#inputPrometricID");
+    const pwField = document.querySelector("#inputPassword");
+    const loginBtn = document.querySelector('button[name="B1"]');
 
-            // Klik login jika tidak disabled
-            const clickTimer = setInterval(() => {
-                if (loginBtn && !loginBtn.disabled) {
-                    console.log("[Logic] Tombol aktif, LOGIN.");
-                    loginBtn.click();
-                    clearInterval(clickTimer);
-                }
-            }, 500);
-        }
-    }, 500);
+    if (!idField || !pwField) return;
+
+    clearInterval(timer);
+    console.log("%c[Login] Form login ditemukan", "color:lime");
+
+    /* =====================================================
+       ISI FORM
+    ===================================================== */
+    idField.value = prometricId;
+    pwField.value = password;
+
+    idField.dispatchEvent(new Event("input", { bubbles: true }));
+    pwField.dispatchEvent(new Event("input", { bubbles: true }));
+
+    /* =====================================================
+       KLIK LOGIN SAAT AKTIF
+    ===================================================== */
+    const clickTimer = setInterval(() => {
+      if (loginBtn && !loginBtn.disabled) {
+        console.log("[Login] Tombol aktif, klik login");
+        loginBtn.click();
+        clearInterval(clickTimer);
+      }
+    }, 300);
+  }, 300);
 })();
