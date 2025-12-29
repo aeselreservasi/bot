@@ -1,4 +1,14 @@
 (function () {
+  /* ================= FLAG HELPER ================= */
+  function getFlag(name) {
+    try {
+      const flags = JSON.parse(localStorage.getItem("autoFlags") || "{}");
+      return flags[name] === true;
+    } catch {
+      return false;
+    }
+  }
+
   /* =====================================================
      HARD GUARD – USER AKTIF
   ===================================================== */
@@ -14,107 +24,146 @@
     console.warn("[error] user tidak aktif, STOP");
     return;
   }
-  const fullPlace = document.querySelector(`input[onclick="window.top.history.back();"]`);
-  const fullplace2 = document.querySelector(`button[onclick="window.top.history.back();"]`);
-  const menit20 = document.querySelector(`input[onclick="top_page('https://www.prometric-jp.com/ssw/test_list/');"]`);
-  const errorsys = document.querySelector(`input[onclick="window.open('about:blank','_self').close();"]`);
 
-  const baseUrl = location.href.includes("j7.prometric-jp.com") ? "https://j7.prometric-jp.com" : "https://j6.prometric-jp.com";
+  /* =====================================================
+     FLAGS (SYNCED)
+  ===================================================== */
+  const autoBegal = getFlag("autoBegal");
+  const autoFastTarget = getFlag("autoFastTarget");
+  const autoError = getFlag("autoError");
+  const autoTarget = getFlag("autoTarget");
 
-  if (errorsys || menit20) {
-    // error system
-    console.log(errorsys);
-    console.log(menit20);
-  } else if (JSON.parse(localStorage.getItem("autoBegal"))) {
-    // back to confirm
-    try {
-      if (fullPlace || fullplace2) {
-        location.replace(`${baseUrl}/Reserve/Confirm`);
-      } else {
-        location.replace(`${baseUrl}/Reserve/SelectPlace`);
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  } else if (JSON.parse(localStorage.getItem("autoFastTarget"))) {
-    // fast target
-    try {
-      if (fullPlace || fullplace2) {
-        fastTargetFunc();
-      } else {
-        location.replace(`${baseUrl}/Reserve/SelectPlace`);
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  } else if (
-    // back to selectplace
-    JSON.parse(localStorage.getItem("autoError")) ||
-    JSON.parse(localStorage.getItem("autoTarget"))
-  ) {
-    try {
-      if (fullPlace || fullplace2) {
-        location.replace(`${baseUrl}/Reserve/SelectPlace`);
-      } else {
-        location.replace(`${baseUrl}/Reserve/SelectPlace`);
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  } else {
-    console.log("Auto error/begal/fast target is disabled.");
+  console.log("[error] flags:", {
+    autoBegal,
+    autoFastTarget,
+    autoError,
+    autoTarget,
+  });
+
+  /* =====================================================
+     DOM CHECK
+  ===================================================== */
+  const fullPlace =
+    document.querySelector(`input[onclick="window.top.history.back();"]`) ||
+    document.querySelector(`button[onclick="window.top.history.back();"]`);
+
+  const menit20 = document.querySelector(
+    `input[onclick="top_page('https://www.prometric-jp.com/ssw/test_list/');"]`
+  );
+
+  const errorSys = document.querySelector(
+    `input[onclick="window.open('about:blank','_self').close();"]`
+  );
+
+  const baseUrl = location.origin;
+
+  /* =====================================================
+     ERROR SYSTEM / 20 MIN BLOCK
+  ===================================================== */
+  if (errorSys || menit20) {
+    console.warn("[error] system / 20min block detected");
+    return;
   }
 
-  function fastTargetFunc() {
-    let datesIdxFast = parseInt(sessionStorage.getItem("datesIdxFast") || "0", 10);
-    let placeIdxFast = parseInt(sessionStorage.getItem("placeIdxFast") || "0", 10);
-    let timeIdxFast = parseInt(sessionStorage.getItem("timeIdxFast") || "0", 10);
-    const userDataFast = JSON.parse(localStorage.getItem("userData")) || {};
-    const datesFast = (userDataFast["Tanggal Ujian"] || []).map((date) => date.replace(/-/g, "/"));
-    const placesFast = userDataFast["Lokasi Ujian"] || [];
-    const timeFast = userDataFast["Jam Ujian"] || [];
+  /* =====================================================
+     BEGAL → BACK TO CONFIRM
+  ===================================================== */
+  if (autoBegal) {
+    console.log("[error] autoBegal ENABLED");
 
-    // Pastikan array tidak kosong sebelum mengakses indeks
-    if (datesFast.length === 0 || placesFast.length === 0 || timeFast.length === 0) {
-      console.log("Data ujian tidak lengkap.");
+    location.replace(
+      fullPlace
+        ? `${baseUrl}/Reserve/Confirm`
+        : `${baseUrl}/Reserve/SelectPlace`
+    );
+    return;
+  }
+
+  /* =====================================================
+     FAST TARGET
+  ===================================================== */
+  if (autoFastTarget) {
+    console.log("[error] autoFastTarget ENABLED");
+
+    if (fullPlace) {
+      fastTargetFunc();
+    } else {
+      location.replace(`${baseUrl}/Reserve/SelectPlace`);
+    }
+    return;
+  }
+
+  /* =====================================================
+     AUTO ERROR / TARGET
+  ===================================================== */
+  if (autoError || autoTarget) {
+    console.log("[error] autoError/autoTarget ENABLED");
+    location.replace(`${baseUrl}/Reserve/SelectPlace`);
+    return;
+  }
+
+  console.log("[error] no auto recovery enabled");
+
+  /* =====================================================
+     FAST TARGET FUNC (UNCHANGED LOGIC)
+  ===================================================== */
+  function fastTargetFunc() {
+    let datesIdxFast = parseInt(
+      sessionStorage.getItem("datesIdxFast") || "0",
+      10
+    );
+    let placeIdxFast = parseInt(
+      sessionStorage.getItem("placeIdxFast") || "0",
+      10
+    );
+    let timeIdxFast = parseInt(
+      sessionStorage.getItem("timeIdxFast") || "0",
+      10
+    );
+
+    const data = userData;
+    const datesFast = (data["Tanggal Ujian"] || []).map((d) =>
+      d.replace(/-/g, "/")
+    );
+    const placesFast = data["Lokasi Ujian"] || [];
+    const timeFast = data["Jam Ujian"] || [];
+
+    if (!datesFast.length || !placesFast.length || !timeFast.length) {
+      console.warn("[error] fast target data tidak lengkap");
       return;
     }
 
-    const formFast = document.createElement("form");
-    formFast.method = "POST";
-    formFast.action = "https://j6.prometric-jp.com/Reserve/Upload";
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = `${location.origin}/Reserve/Upload`;
 
-    const createHiddenInput = (name, value) => {
-      const input = document.createElement("input");
-      input.type = "hidden";
-      input.name = name;
-      input.value = value;
-      return input;
+    const hidden = (n, v) => {
+      const i = document.createElement("input");
+      i.type = "hidden";
+      i.name = n;
+      i.value = v;
+      return i;
     };
 
-    formFast.appendChild(createHiddenInput("examMethod", "TestCenter"));
-    formFast.appendChild(createHiddenInput("In_examstart", timeFast[timeIdxFast]));
-    formFast.appendChild(createHiddenInput("In_place_no", placesFast[placeIdxFast]));
-    formFast.appendChild(createHiddenInput("In_exam_day", datesFast[datesIdxFast]));
+    form.appendChild(hidden("examMethod", "TestCenter"));
+    form.appendChild(hidden("In_examstart", timeFast[timeIdxFast]));
+    form.appendChild(hidden("In_place_no", placesFast[placeIdxFast]));
+    form.appendChild(hidden("In_exam_day", datesFast[datesIdxFast]));
 
-    // Update indeks dengan urutan yang benar
     timeIdxFast++;
     if (timeIdxFast >= timeFast.length) {
       timeIdxFast = 0;
       placeIdxFast++;
       if (placeIdxFast >= placesFast.length) {
         placeIdxFast = 0;
-        datesIdxFast++;
-        if (datesIdxFast >= datesFast.length) {
-          datesIdxFast = 0; // Reset ke awal jika semua kombinasi telah dicoba
-        }
+        datesIdxFast = (datesIdxFast + 1) % datesFast.length;
         sessionStorage.setItem("datesIdxFast", datesIdxFast);
       }
       sessionStorage.setItem("placeIdxFast", placeIdxFast);
     }
     sessionStorage.setItem("timeIdxFast", timeIdxFast);
 
-    document.body.appendChild(formFast);
-    formFast.submit();
+    document.body.appendChild(form);
+    form.submit();
   }
 })();
