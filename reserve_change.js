@@ -1,4 +1,4 @@
-// reserve_change.js (FINAL – FIX PROMETRIC CLICK)
+// reserve_change.js (FINAL – RETRY SAFE)
 (function () {
   console.log("[ReserveChange] script loaded");
 
@@ -19,28 +19,45 @@
   }
 
   /* =====================================================
-     FLAG
+     FLAGS
   ===================================================== */
   const autoChange = localStorage.getItem("autoChange") === "true";
   const autoReserve = localStorage.getItem("autoReserve") === "true";
 
   /* =====================================================
-     UTIL: PROMETRIC SAFE CLICK
+     KONFIG RETRY
   ===================================================== */
-  function prometricClick(el) {
-    if (!el) return false;
+  const RETRY_INTERVAL = 400; // ms
+  const MAX_RETRY = 15;       // total ±6 detik
 
-    try {
-      // 1️⃣ direct call (PALING KUAT)
-      if (typeof window.WEB_MoveNewReg === "function") {
-        console.log("[ReserveChange] call WEB_MoveNewReg()");
-        window.WEB_MoveNewReg();
-        return true;
-      }
+  let retryCount = 0;
+  let retryTimer = null;
 
-      // 2️⃣ native mouse events
+  /* =====================================================
+     PROMETRIC TRIGGER
+  ===================================================== */
+  function tryTriggerReserve() {
+    retryCount++;
+
+    const reserveBtn =
+      document.getElementById("button") ||
+      document.querySelector(`[onclick^="WEB_MoveNewReg"]`);
+
+    const hasFunc = typeof window.WEB_MoveNewReg === "function";
+
+    if (hasFunc) {
+      console.log("[ReserveChange] WEB_MoveNewReg ready, trigger");
+      clearInterval(retryTimer);
+      window.WEB_MoveNewReg();
+      return;
+    }
+
+    if (reserveBtn) {
+      console.log("[ReserveChange] Reserve button found (no func yet)");
+
+      // fallback event
       ["mousedown", "mouseup", "click"].forEach((type) => {
-        el.dispatchEvent(
+        reserveBtn.dispatchEvent(
           new MouseEvent(type, {
             bubbles: true,
             cancelable: true,
@@ -48,11 +65,13 @@
           })
         );
       });
+    }
 
-      return true;
-    } catch (e) {
-      console.error("[ReserveChange] click error", e);
-      return false;
+    if (retryCount >= MAX_RETRY) {
+      clearInterval(retryTimer);
+      console.warn(
+        "[ReserveChange] RETRY STOP – WEB_MoveNewReg tidak tersedia"
+      );
     }
   }
 
@@ -69,7 +88,6 @@
     );
 
     if (changeBtn) {
-      console.log("[ReserveChange] Change button found");
       changeBtn.click();
     } else {
       console.log("[ReserveChange] Change button not found");
@@ -81,26 +99,8 @@
   if (autoReserve && !autoChange) {
     console.log("[ReserveChange] Auto reserve ENABLED");
 
-    const reserveBtn =
-      document.getElementById("button") ||
-      document.querySelector(`[onclick^="WEB_MoveNewReg"]`);
-
-    if (!reserveBtn) {
-      console.log("[ReserveChange] Reserve button not found");
-      return;
-    }
-
-    console.log("[ReserveChange] Reserve button found, trying to click…");
-
-    // TUNGGU SEDIKIT (PROMETRIC SERING TELAT INIT)
-    setTimeout(() => {
-      const success = prometricClick(reserveBtn);
-      console.log(
-        success
-          ? "[ReserveChange] Reserve triggered"
-          : "[ReserveChange] Reserve failed"
-      );
-    }, 300);
+    retryTimer = setInterval(tryTriggerReserve, RETRY_INTERVAL);
+    tryTriggerReserve(); // immediate try
 
     return;
   }
