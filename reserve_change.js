@@ -1,4 +1,4 @@
-// reserve_change.js (FINAL – bot baru compatible)
+// reserve_change.js (FINAL – FIX PROMETRIC CLICK)
 (function () {
   console.log("[ReserveChange] script loaded");
 
@@ -19,10 +19,42 @@
   }
 
   /* =====================================================
-     AMBIL FLAG (STRING BASED)
+     FLAG
   ===================================================== */
   const autoChange = localStorage.getItem("autoChange") === "true";
   const autoReserve = localStorage.getItem("autoReserve") === "true";
+
+  /* =====================================================
+     UTIL: PROMETRIC SAFE CLICK
+  ===================================================== */
+  function prometricClick(el) {
+    if (!el) return false;
+
+    try {
+      // 1️⃣ direct call (PALING KUAT)
+      if (typeof window.WEB_MoveNewReg === "function") {
+        console.log("[ReserveChange] call WEB_MoveNewReg()");
+        window.WEB_MoveNewReg();
+        return true;
+      }
+
+      // 2️⃣ native mouse events
+      ["mousedown", "mouseup", "click"].forEach((type) => {
+        el.dispatchEvent(
+          new MouseEvent(type, {
+            bubbles: true,
+            cancelable: true,
+            view: window,
+          })
+        );
+      });
+
+      return true;
+    } catch (e) {
+      console.error("[ReserveChange] click error", e);
+      return false;
+    }
+  }
 
   /* =====================================================
      LOGIKA UTAMA
@@ -37,48 +69,42 @@
     );
 
     if (changeBtn) {
-      console.log("[ReserveChange] Change button found, clicking...");
+      console.log("[ReserveChange] Change button found");
       changeBtn.click();
     } else {
       console.log("[ReserveChange] Change button not found");
     }
-
     return;
   }
 
-  // ===== RESERVE BARU / CEK DALAM =====
+  // ===== RESERVE BARU =====
   if (autoReserve && !autoChange) {
     console.log("[ReserveChange] Auto reserve ENABLED");
 
-    try {
-      const reserveBtn1 = document.getElementById("button");
-      const reserveBtn2 = document.querySelector(
-        `[onclick^="WEB_MoveNewReg"]`
-      );
+    const reserveBtn =
+      document.getElementById("button") ||
+      document.querySelector(`[onclick^="WEB_MoveNewReg"]`);
 
-      if (reserveBtn1) {
-        console.log("[ReserveChange] Reserve button #1 found");
-        // reserveBtn1.click();
-        return;
-      }
-
-      if (reserveBtn2) {
-        console.log("[ReserveChange] Reserve button #2 found");
-        // reserveBtn2.click();
-        return;
-      }
-
+    if (!reserveBtn) {
       console.log("[ReserveChange] Reserve button not found");
-    } catch (err) {
-      console.error("[ReserveChange] error:", err);
+      return;
     }
+
+    console.log("[ReserveChange] Reserve button found, trying to click…");
+
+    // TUNGGU SEDIKIT (PROMETRIC SERING TELAT INIT)
+    setTimeout(() => {
+      const success = prometricClick(reserveBtn);
+      console.log(
+        success
+          ? "[ReserveChange] Reserve triggered"
+          : "[ReserveChange] Reserve failed"
+      );
+    }, 300);
 
     return;
   }
 
-  /* =====================================================
-     DEFAULT
-  ===================================================== */
   console.log(
     "[ReserveChange] Tidak ada mode aktif (autoChange / autoReserve)"
   );
