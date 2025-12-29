@@ -1,7 +1,5 @@
 (function () {
-  /* =====================================================
-     HARD GUARD – USER AKTIF
-  ===================================================== */
+  /* ================= USER GUARD ================= */
   let userData;
   try {
     userData = JSON.parse(localStorage.getItem("userData") || "{}");
@@ -15,37 +13,36 @@
     return;
   }
 
-  /* =====================================================
-     FLAGS
-  ===================================================== */
+  /* ================= FLAGS ================= */
   const autoCheck = localStorage.getItem("autoCheck") === "true";
-  if (!autoCheck) {
-    console.log("Auto check is disabled.");
-  } else if (location.href === "https://j6.prometric-jp.com/Reserve/Policy" || location.href === "https://j7.prometric-jp.com/Reserve/Policy") {
-    // Check the checkbox and click the next button
-    document.getElementById("chkPL").click();
+  if (!autoCheck) return;
+
+  const path = location.pathname;
+
+  /* ================= POLICY ================= */
+  if (path.startsWith("/Reserve/Policy")) {
+    document.getElementById("chkPL")?.click();
     window.open("https://www.example.com/", "_blank");
     try {
-      document.querySelector(`input[onclick="checkPolicy('./PrivateChk')"]`).click();
-    } catch (error) {
-      console.log(error);
-      document.querySelector(`[onclick^="checkPolicy"]`).click();
+      document.querySelector(`[onclick^="checkPolicy"]`)?.click();
+    } catch (e) {
+      console.warn("[check] gagal klik Policy", e);
     }
-  } else if (location.href === "https://j6.prometric-jp.com/Reserve/PrivateChk" || location.href === "https://j7.prometric-jp.com/Reserve/PrivateChk") {
-    // Click the next button
-    // window.open("https://www.example.com/", "_blank");
+  } else if (path.startsWith("/Reserve/PrivateChk")) {
+
+  /* ================= PRIVATE ================= */
     try {
-      document.querySelector(`input[onclick="javascript:Next('./Attention')"]`).click();
-    } catch (error) {
-      console.log(error);
-      document.querySelector(`button[onclick="javascript:Next('./Attention')"]`).click();
+      document.querySelector(`[onclick^="javascript:Next"]`)?.click();
+    } catch (e) {
+      console.warn("[check] gagal klik PrivateChk", e);
     }
-  } else if (location.href === "https://j6.prometric-jp.com/Reserve/Attention" || location.href === "https://j7.prometric-jp.com/Reserve/Attention") {
+  } else if (path.startsWith("/Reserve/Attention")) {
+
+  /* ================= ATTENTION ================= */
     try {
-      document.querySelector(`input[onclick="agree('ExamSelect')"]`).click();
-    } catch (error) {
-      console.log(error);
-      document.querySelector(`button[onclick="agree('ExamSelect')"]`).click();
+      document.querySelector(`[onclick^="agree"]`)?.click();
+    } catch (e) {
+      console.warn("[check] gagal klik Attention", e);
     }
   }
 })();
