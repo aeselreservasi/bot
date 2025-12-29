@@ -1,11 +1,21 @@
-// GitHub: login.js (FINAL – localStorage version)
+// GitHub: login.js (FINAL – standard helper)
 (function () {
-  let autoFlags = {};
-  try {
-    autoFlags = JSON.parse(localStorage.getItem("autoFlags") || "{}");
-  } catch {}
+  /* ================= FLAG HELPER ================= */
+  function getFlag(name) {
+    try {
+      const flags = JSON.parse(localStorage.getItem("autoFlags") || "{}");
+      return flags[name] === true;
+    } catch {
+      return false;
+    }
+  }
 
-  const autoLogin = autoFlags.autoLogin === true;
+  /* ================= GUARD DOUBLE RUN ================= */
+  if (window.__LOGIN_SCRIPT_RAN__) return;
+  window.__LOGIN_SCRIPT_RAN__ = true;
+
+  /* ================= FLAGS ================= */
+  const autoLogin = getFlag("autoLogin");
 
   console.log("[Login] autoLogin =", autoLogin);
 
@@ -38,7 +48,16 @@
   /* =====================================================
      TUNGGU FORM LOGIN
   ===================================================== */
+  const startedAt = Date.now();
+  const MAX_WAIT = 15000;
+
   const timer = setInterval(() => {
+    if (Date.now() - startedAt > MAX_WAIT) {
+      console.warn("[Login] timeout tunggu form login");
+      clearInterval(timer);
+      return;
+    }
+
     const idField = document.querySelector("#inputPrometricID");
     const pwField = document.querySelector("#inputPassword");
     const loginBtn = document.querySelector('button[name="B1"]');
@@ -56,6 +75,8 @@
 
     idField.dispatchEvent(new Event("input", { bubbles: true }));
     pwField.dispatchEvent(new Event("input", { bubbles: true }));
+    idField.dispatchEvent(new Event("change", { bubbles: true }));
+    pwField.dispatchEvent(new Event("change", { bubbles: true }));
 
     /* =====================================================
        KLIK LOGIN SAAT AKTIF
