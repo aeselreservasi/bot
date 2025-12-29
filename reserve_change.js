@@ -1,6 +1,16 @@
-// reserve_change.js (FINAL – autoFlags synced)
+// reserve_change.js (FINAL – standard helper)
 (function () {
   console.log("[ReserveChange] script loaded");
+
+  /* ================= FLAG HELPER ================= */
+  function getFlag(name) {
+    try {
+      const flags = JSON.parse(localStorage.getItem("autoFlags") || "{}");
+      return flags[name] === true;
+    } catch {
+      return false;
+    }
+  }
 
   /* =====================================================
      HARD GUARD – USER AKTIF
@@ -19,23 +29,18 @@
   }
 
   /* =====================================================
-     FLAGS (SYNCED)
+     FLAGS (SYNCED – FINAL)
   ===================================================== */
-  let autoFlags = {};
-  try {
-    autoFlags = JSON.parse(localStorage.getItem("autoFlags") || "{}");
-  } catch {}
-
-  const autoChange = autoFlags.autoChange === true;
-  const autoReserve = autoFlags.autoReserve === true;
+  const autoChange = getFlag("autoChange");
+  const autoReserve = getFlag("autoReserve");
 
   console.log("[ReserveChange] flags:", { autoChange, autoReserve });
 
   /* =====================================================
      KONFIG RETRY
   ===================================================== */
-  const RETRY_INTERVAL = 400; // ms
-  const MAX_RETRY = 15;       // total ±6 detik
+  const RETRY_INTERVAL = 400;
+  const MAX_RETRY = 15;
 
   let retryCount = 0;
   let retryTimer = null;
@@ -50,9 +55,7 @@
       document.getElementById("button") ||
       document.querySelector(`[onclick^="WEB_MoveNewReg"]`);
 
-    const hasFunc = typeof window.WEB_MoveNewReg === "function";
-
-    if (hasFunc) {
+    if (typeof window.WEB_MoveNewReg === "function") {
       console.log("[ReserveChange] WEB_MoveNewReg ready, trigger");
       clearInterval(retryTimer);
       window.WEB_MoveNewReg();
@@ -61,23 +64,16 @@
 
     if (reserveBtn) {
       console.log("[ReserveChange] Reserve button found (no func yet)");
-
-      ["mousedown", "mouseup", "click"].forEach((type) => {
+      ["mousedown", "mouseup", "click"].forEach((type) =>
         reserveBtn.dispatchEvent(
-          new MouseEvent(type, {
-            bubbles: true,
-            cancelable: true,
-            view: window,
-          })
-        );
-      });
+          new MouseEvent(type, { bubbles: true, cancelable: true })
+        )
+      );
     }
 
     if (retryCount >= MAX_RETRY) {
       clearInterval(retryTimer);
-      console.warn(
-        "[ReserveChange] RETRY STOP – WEB_MoveNewReg tidak tersedia"
-      );
+      console.warn("[ReserveChange] RETRY STOP – WEB_MoveNewReg tidak tersedia");
     }
   }
 
@@ -88,29 +84,19 @@
   // ===== RESCHEDULE =====
   if (autoChange && !autoReserve) {
     console.log("[ReserveChange] Auto change ENABLED");
-
-    const changeBtn = document.querySelector(
-      `[onclick^="WEB_MoveAddressChange"]`
-    );
-
-    if (changeBtn) {
-      changeBtn.click();
-    } else {
-      console.log("[ReserveChange] Change button not found");
-    }
+    document
+      .querySelector(`[onclick^="WEB_MoveAddressChange"]`)
+      ?.click();
     return;
   }
 
   // ===== RESERVE BARU =====
   if (autoReserve && !autoChange) {
     console.log("[ReserveChange] Auto reserve ENABLED");
-
     retryTimer = setInterval(tryTriggerReserve, RETRY_INTERVAL);
-    tryTriggerReserve(); // immediate try
+    tryTriggerReserve();
     return;
   }
 
-  console.log(
-    "[ReserveChange] Tidak ada mode aktif (autoChange / autoReserve)"
-  );
+  console.log("[ReserveChange] Tidak ada mode aktif");
 })();
