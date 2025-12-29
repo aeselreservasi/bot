@@ -1,4 +1,14 @@
 (function () {
+  /* ================= FLAG HELPER ================= */
+  function getFlag(name) {
+    try {
+      const flags = JSON.parse(localStorage.getItem("autoFlags") || "{}");
+      return flags[name] === true;
+    } catch {
+      return false;
+    }
+  }
+
   /* =====================================================
      HARD GUARD – USER AKTIF
   ===================================================== */
@@ -6,24 +16,44 @@
   try {
     userData = JSON.parse(localStorage.getItem("userData") || "{}");
   } catch {
-    console.warn("[exam] userData rusak");
+    console.warn("[payMethod] userData rusak");
     return;
   }
 
   if (userData.is_active !== true) {
-    console.warn("[exam] user tidak aktif, STOP");
+    console.warn("[payMethod] user tidak aktif, STOP");
     return;
   }
-if (JSON.parse(localStorage.getItem("autoPayMethod"))) {
-  console.log("Auto pay method is enabled.");
-  document.querySelector(`input[value="zotapay"]`).click();
-  try {
-    document.querySelector(`input[onclick="nextPay();"]`).click();
-  } catch (error) {
-    console.log(error);
-    document.querySelector(`button[onclick="nextPay();"]`).click();
+
+  /* =====================================================
+     FLAGS (SYNCED)
+  ===================================================== */
+  const autoPayMethod = getFlag("autoPayMethod");
+  console.log("[payMethod] autoPayMethod =", autoPayMethod);
+
+  if (!autoPayMethod) {
+    console.log("[payMethod] autoPayMethod disabled");
+    return;
   }
-} else {
-  console.log("Auto pay method is disabled.");
-}
+
+  /* =====================================================
+     SELECT PAYMENT METHOD
+  ===================================================== */
+  const payRadio = document.querySelector(`input[value="zotapay"]`);
+  if (!payRadio) {
+    console.warn("[payMethod] zotapay option not found");
+    return;
+  }
+
+  payRadio.click();
+  console.log("[payMethod] zotapay selected");
+
+  /* =====================================================
+     NEXT
+  ===================================================== */
+  try {
+    document.querySelector(`input[onclick="nextPay();"]`)?.click();
+  } catch (e) {
+    document.querySelector(`button[onclick="nextPay();"]`)?.click();
+  }
 })();
