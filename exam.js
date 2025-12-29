@@ -1,4 +1,14 @@
 (function () {
+  /* ================= FLAG HELPER ================= */
+  function getFlag(name) {
+    try {
+      const flags = JSON.parse(localStorage.getItem("autoFlags") || "{}");
+      return flags[name] === true;
+    } catch {
+      return false;
+    }
+  }
+
   /* =====================================================
      HARD GUARD – USER AKTIF
   ===================================================== */
@@ -16,25 +26,50 @@
   }
 
   /* =====================================================
-     FLAGS
+     FLAGS (SYNCED)
+  ===================================================== */
+  const autoExam = getFlag("autoExam");
+
+  console.log("[exam] autoExam =", autoExam);
+
+  /* =====================================================
+     EXAM SELECTION
   ===================================================== */
   let exam = localStorage.getItem("exam");
-  if (exam) {
-    if (exam === "JH0-I12J") {
-      exam = "JH0-J12J";
-    }
-    const examEl = document.querySelector(`#select1 > option[value=${exam}]`);
-    if (examEl) {
-      examEl.selected = true;
-      if (JSON.parse(localStorage.getItem("autoExam"))) {
-        document.getElementById("test").click();
-      } else {
-        console.log("Auto exam is disabled.");
-      }
+
+  if (!exam) {
+    console.log("[exam] No exam selected");
+    return;
+  }
+
+  // mapping khusus
+  if (exam === "JH0-I12J") {
+    exam = "JH0-J12J";
+  }
+
+  const examEl = document.querySelector(
+    `#select1 > option[value="${exam}"]`
+  );
+
+  if (!examEl) {
+    console.warn("[exam] Invalid exam:", exam);
+    return;
+  }
+
+  examEl.selected = true;
+
+  /* =====================================================
+     SUBMIT
+  ===================================================== */
+  if (autoExam) {
+    const btn = document.getElementById("test");
+    if (btn) {
+      console.log("[exam] autoExam ENABLED, submit");
+      btn.click();
     } else {
-      console.log("Invalid exam selected.");
+      console.warn("[exam] submit button not found");
     }
   } else {
-    console.log("No exam selected.");
+    console.log("[exam] autoExam disabled");
   }
 })();
