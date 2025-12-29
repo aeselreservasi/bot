@@ -11,10 +11,7 @@
 
   /* ================= STEP TRACK ================= */
   var STATUS_STEP_KEY = "__BOT_STATUS_STEP__";
-  var statusStep = parseInt(
-    sessionStorage.getItem(STATUS_STEP_KEY) || "0",
-    10
-  );
+  var statusStep = parseInt(localStorage.getItem(STATUS_STEP_KEY) || "0", 10);
 
   /* ================= USER GUARD ================= */
   var userData;
@@ -64,12 +61,30 @@
   function inputDataUmum() {
     if (userData["Tanggal Lahir"]) {
       var bulanMap = {
-        januari: "01", februari: "02", maret: "03", april: "04",
-        mei: "05", juni: "06", juli: "07", agustus: "08",
-        september: "09", oktober: "10", november: "11", desember: "12",
-        january: "01", febrary: "02", march: "03", april: "04",
-        may: "05", june: "06", july: "07", august: "08",
-        september: "09", october: "10", november: "11", december: "12"
+        januari: "01",
+        februari: "02",
+        maret: "03",
+        april: "04",
+        mei: "05",
+        juni: "06",
+        juli: "07",
+        agustus: "08",
+        september: "09",
+        oktober: "10",
+        november: "11",
+        desember: "12",
+        january: "01",
+        febrary: "02",
+        march: "03",
+        april: "04",
+        may: "05",
+        june: "06",
+        july: "07",
+        august: "08",
+        september: "09",
+        october: "10",
+        november: "11",
+        december: "12",
       };
 
       var parts = userData["Tanggal Lahir"].split(" ");
@@ -86,16 +101,10 @@
       if (d) d.value = day.length === 1 ? "0" + day : day;
     }
 
-    if (
-      userData["Jenis Kelamin"] &&
-      userData["Jenis Kelamin"].toLowerCase().indexOf("laki") !== -1
-    ) {
+    if (userData["Jenis Kelamin"] && userData["Jenis Kelamin"].toLowerCase().indexOf("laki") !== -1) {
       var g1 = document.querySelector('input[name="rdoGender"][value="2"]');
       if (g1) g1.click();
-    } else if (
-      userData["Jenis Kelamin"] &&
-      userData["Jenis Kelamin"].toLowerCase().indexOf("perempuan") !== -1
-    ) {
+    } else if (userData["Jenis Kelamin"] && userData["Jenis Kelamin"].toLowerCase().indexOf("perempuan") !== -1) {
       var g2 = document.querySelector('input[name="rdoGender"][value="1"]');
       if (g2) g2.click();
     }
@@ -113,7 +122,6 @@
   /* ===== STEP 1 ===== */
   if (statusStep === 0) {
     console.log("[inputData] STEP 1");
-
     inputDataUmum();
 
     /* ========= JFT ========= */
@@ -145,10 +153,8 @@
 
       var ss = document.querySelector('select[name="selStatus"]');
       if (ss) ss.value = "A";
-    }
-
-    /* ========= SSW FOOD ========= */
-    else if (exam === "T20-J11J" || exam === "T10-J11J") {
+    } else if (exam === "T20-J11J" || exam === "T10-J11J") {
+      /* ========= SSW FOOD ========= */
       var job = document.querySelector('select[name="selJob"]');
       if (job) job.value = "University student/graduate student";
 
@@ -158,32 +164,21 @@
       var r2 = document.querySelector('input[name="chkWork"][value="A"]');
       if (r2) r2.click();
 
-      var rt = document.querySelector(
-        'input[name="rdoTaken"][value="This is the first time."]'
-      );
+      var rt = document.querySelector('input[name="rdoTaken"][value="This is the first time."]');
       if (rt) rt.click();
 
       var sl = document.querySelector('select[name="selLearn"]');
       if (sl) {
-        sl.value =
-          "I knew that there were learning texts, but I didn't know where I could find them.";
+        sl.value = "I knew that there were learning texts, but I didn't know where I could find them.";
       }
 
       var kn = document.querySelector('input[name="chkKnows"][value="A"]');
       if (kn) kn.click();
 
-      var ab = document.querySelector(
-        'input[name="rdoAbility"][value="Have passed"]'
-      );
+      var ab = document.querySelector('input[name="rdoAbility"][value="Have passed"]');
       if (ab) ab.click();
-    }
-
-    /* ========= KAIGO ========= */
-    else if (
-      exam === "JH0-I11J" ||
-      exam === "JH0-I12J" ||
-      exam === "JH0-J12J"
-    ) {
+    } else if (exam === "JH0-I11J" || exam === "JH0-I12J" || exam === "JH0-J12J") {
+      /* ========= KAIGO ========= */
       var ac = document.querySelector('select[name="selAcademic"]');
       if (ac) ac.value = "High school graduate";
 
@@ -201,10 +196,8 @@
 
       var lv = document.querySelector('select[name="selJpLevel"]');
       if (lv) lv.value = "JFT-Basic";
-    }
-
-    /* ========= PERTANIAN ========= */
-    else if (exam === "NC0-I11J" || exam === "NC0-I12J") {
+    } else if (exam === "NC0-I11J" || exam === "NC0-I12J") {
+      /* ========= PERTANIAN ========= */
       var trv = document.querySelector('select[name="selTraveling"]');
       if (trv) trv.value = "No";
 
@@ -221,18 +214,17 @@
       if (ss2) ss2.value = "I will not take the test in Japan.";
     }
 
-    sessionStorage.setItem(STATUS_STEP_KEY, "1");
+    localStorage.setItem(STATUS_STEP_KEY, "1");
     goNext();
     return;
   }
 
   /* ===== STEP 2 ===== */
   if (statusStep === 1) {
-    console.log("[inputData] STEP 2 (next only)");
-    sessionStorage.setItem(STATUS_STEP_KEY, "2");
+    console.log("[inputData] STEP 2");
+    localStorage.removeItem(STATUS_STEP_KEY);
     goNext();
     return;
   }
-
   console.log("[inputData] STEP >= 2, no action");
 })();
