@@ -35,7 +35,6 @@
   /* ================= POLICY ================= */
   if (path.startsWith("/Reserve/Policy")) {
     document.getElementById("chkPL")?.click();
-    window.open("https://www.example.com/", "_blank");
     try {
       document.querySelector(`[onclick^="checkPolicy"]`)?.click();
       console.log("[check] Policy accepted");
