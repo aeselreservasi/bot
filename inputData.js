@@ -9,7 +9,9 @@
     }
   }
 
-  if (!getFlag("autoInput")) return;
+  /* ================= STEP TRACK ================= */
+  var STATUS_STEP_KEY = "__BOT_STATUS_STEP__";
+  var statusStep = parseInt(localStorage.getItem(STATUS_STEP_KEY) || "0", 10);
 
   /* ================= USER GUARD ================= */
   var userData;
@@ -20,102 +22,135 @@
     return;
   }
 
-  if (userData.is_active !== true) return;
+  if (userData.is_active !== true) {
+    console.warn("[inputData] user tidak aktif, STOP");
+    return;
+  }
 
-  /* ================= ONCE FLAG ================= */
-  var FILLED_KEY = "__BOT_STATUS_FILLED__";
-  var alreadyFilled = localStorage.getItem(FILLED_KEY) === "1";
+  /* ================= FLAGS ================= */
+  var autoInput = getFlag("autoInput");
+  console.log("[inputData] autoInput =", autoInput, "step =", statusStep);
 
   /* ================= NEXT HANDLER ================= */
-  function clickNext() {
-    var start = Date.now();
+  function goNext() {
+    if (!autoInput) return;
+
+    var started = Date.now();
     var timer = setInterval(function () {
       var btn = document.getElementById("Next");
+
       if (btn && !btn.disabled) {
         clearInterval(timer);
-        console.log("[inputData] Klik Next");
+        console.log("[inputData] Next ready");
+
         if (typeof window.fnc_input_check_next === "function") {
           window.fnc_input_check_next();
         } else {
           btn.click();
         }
       }
-      if (Date.now() - start > 8000) {
+
+      if (Date.now() - started > 8000) {
         clearInterval(timer);
         console.warn("[inputData] Next timeout");
       }
     }, 300);
   }
 
-  /* ================= DETEKSI FORM ================= */
-  var hasBirthForm = document.querySelector('select[name="selBYear"]') || document.querySelector('input[name="rdoGender"]');
-
-  /* ================= FORM UMUM ================= */
+  /* ================= DATA UMUM ================= */
   function inputDataUmum() {
-    if (!userData["Tanggal Lahir"]) return;
+    if (userData["Tanggal Lahir"]) {
+      var bulanMap = {
+        januari: "01",
+        februari: "02",
+        maret: "03",
+        april: "04",
+        mei: "05",
+        juni: "06",
+        juli: "07",
+        agustus: "08",
+        september: "09",
+        oktober: "10",
+        november: "11",
+        desember: "12",
+        january: "01",
+        febrary: "02",
+        march: "03",
+        april: "04",
+        may: "05",
+        june: "06",
+        july: "07",
+        august: "08",
+        september: "09",
+        october: "10",
+        november: "11",
+        december: "12",
+      };
 
-    var bulan = {
-      januari: "01",
-      februari: "02",
-      maret: "03",
-      april: "04",
-      mei: "05",
-      juni: "06",
-      juli: "07",
-      agustus: "08",
-      september: "09",
-      oktober: "10",
-      november: "11",
-      desember: "12",
-      january: "01",
-      febrary: "02",
-      march: "03",
-      april: "04",
-      may: "05",
-      june: "06",
-      july: "07",
-      august: "08",
-      september: "09",
-      october: "10",
-      november: "11",
-      december: "12",
-    };
+      var parts = userData["Tanggal Lahir"].split(" ");
+      var day = parts[0];
+      var month = parts[1] ? parts[1].toLowerCase() : "";
+      var year = parts[2];
 
-    var p = userData["Tanggal Lahir"].split(" ");
-    var d = document.querySelector('select[name="selBDay"]');
-    var m = document.querySelector('select[name="selBMonth"]');
-    var y = document.querySelector('select[name="selBYear"]');
+      var y = document.querySelector('select[name="selBYear"]');
+      var m = document.querySelector('select[name="selBMonth"]');
+      var d = document.querySelector('select[name="selBDay"]');
 
-    if (y) y.value = p[2];
-    if (m && bulan[p[1].toLowerCase()]) m.value = bulan[p[1].toLowerCase()];
-    if (d) d.value = p[0].length === 1 ? "0" + p[0] : p[0];
+      if (y) y.value = year;
+      if (m && bulanMap[month]) m.value = bulanMap[month];
+      if (d) d.value = day.length === 1 ? "0" + day : day;
+    }
+    function retryClickNext(maxRetry) {
+      var attempt = 0;
+      var timer = setInterval(function () {
+        attempt++;
 
-    if (userData["Jenis Kelamin"]) {
-      if (userData["Jenis Kelamin"].toLowerCase().indexOf("laki") !== -1) {
-        var g1 = document.querySelector('input[name="rdoGender"][value="2"]');
-        if (g1) g1.click();
-      } else {
-        var g2 = document.querySelector('input[name="rdoGender"][value="1"]');
-        if (g2) g2.click();
-      }
+        var btn = document.getElementById("Next");
+        var canClick = btn && !btn.disabled;
+
+        if (canClick) {
+          console.log("[inputData] Next clicked on attempt", attempt);
+          clearInterval(timer);
+
+          if (typeof window.fnc_input_check_next === "function") {
+            window.fnc_input_check_next();
+          } else {
+            btn.click();
+          }
+          return;
+        }
+
+        if (attempt >= maxRetry) {
+          clearInterval(timer);
+          console.warn("[inputData] Next gagal setelah", maxRetry, "percobaan");
+        }
+      }, 500);
+    }
+
+    if (userData["Jenis Kelamin"] && userData["Jenis Kelamin"].toLowerCase().indexOf("laki") !== -1) {
+      var g1 = document.querySelector('input[name="rdoGender"][value="2"]');
+      if (g1) g1.click();
+    } else if (userData["Jenis Kelamin"] && userData["Jenis Kelamin"].toLowerCase().indexOf("perempuan") !== -1) {
+      var g2 = document.querySelector('input[name="rdoGender"][value="1"]');
+      if (g2) g2.click();
     }
 
     var nat = document.querySelector('input[name="rdoNation"]');
     if (nat) nat.click();
 
-    var selNat = document.querySelector('select[name="selNation"]');
-    if (selNat) selNat.value = "Indonesia";
+    var selNation = document.querySelector('select[name="selNation"]');
+    if (selNation) selNation.value = "Indonesia";
   }
 
-  /* ================= MAIN ================= */
+  /* ================= MAIN LOGIC ================= */
   var exam = localStorage.getItem("exam");
 
-  if (!alreadyFilled && hasBirthForm) {
-    console.log("[inputData] Isi form pertama");
-
+  /* ===== STEP 1 ===== */
+  if (statusStep === 0) {
+    console.log("[inputData] STEP 1");
     inputDataUmum();
 
-    /* JFT */
+    /* ========= JFT ========= */
     if (exam === "F10-E10J") {
       var rLang = document.querySelector('input[name="rdoLang"]');
       if (rLang) rLang.click();
@@ -123,6 +158,7 @@
       var selLang = document.querySelector('select[name="selLang"]');
       if (selLang) selLang.value = "Indonesian";
 
+      /* checkbox khusus JFT */
       var occ = document.querySelector('input[name="chkOccupation"][value="M"]');
       if (occ) occ.click();
 
@@ -134,6 +170,15 @@
 
       var ws = document.querySelector('input[name="chkWebSite"][value="A"]');
       if (ws) ws.click();
+
+      var tr = document.querySelector('select[name="selTraveling"]');
+      if (tr) tr.value = "No, I have not been to Japan before";
+
+      var st = document.querySelector('select[name="selStudy"]');
+      if (st) st.value = "Over 300 hours";
+
+      var ss = document.querySelector('select[name="selStatus"]');
+      if (ss) ss.value = "A";
     } else if (exam === "T20-J11J" || exam === "T10-J11J") {
       /* ========= SSW FOOD ========= */
       var job = document.querySelector('select[name="selJob"]');
@@ -195,13 +240,17 @@
       if (ss2) ss2.value = "I will not take the test in Japan.";
     }
 
-    localStorage.setItem(FILLED_KEY, "1");
-    clickNext();
+    localStorage.setItem(STATUS_STEP_KEY, "1");
+    goNext();
     return;
   }
 
-  /* ================= HALAMAN KEDUA ================= */
-  console.log("[inputData] Halaman kedua → Next saja");
-  localStorage.removeItem(FILLED_KEY);
-  clickNext();
+  /* ===== STEP 2 ===== */
+  if (statusStep === 1) {
+    console.log("[inputData] STEP 2");
+    localStorage.removeItem(STATUS_STEP_KEY);
+    retryClickNext(10);
+    return;
+  }
+  console.log("[inputData] STEP >= 2, no action");
 })();
