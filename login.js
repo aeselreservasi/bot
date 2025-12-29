@@ -1,14 +1,14 @@
 // GitHub: login.js (FINAL – localStorage version)
 (function () {
-  console.log(
-    "%c[Login] Script login dijalankan",
-    "background:#333;color:#fff;padding:2px 6px;"
-  );
+  let autoFlags = {};
+  try {
+    autoFlags = JSON.parse(localStorage.getItem("autoFlags") || "{}");
+  } catch {}
 
-  /* =====================================================
-     CEK FLAG
-  ===================================================== */
-  const autoLogin = localStorage.getItem("autoLogin") === "true";
+  const autoLogin = autoFlags.autoLogin === true;
+
+  console.log("[Login] autoLogin =", autoLogin);
+
   if (!autoLogin) {
     console.log("[Login] autoLogin = false, skip");
     return;
