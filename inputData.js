@@ -1,140 +1,153 @@
 (function () {
-  const masterData = window.__BOT_DATA__;
-  if (!masterData) {
-    console.error("[BOT] Data __BOT_DATA__ tidak ditemukan.");
+  /* =====================================================
+     HARD GUARD – USER AKTIF
+  ===================================================== */
+  let userData;
+  try {
+    userData = JSON.parse(localStorage.getItem("userData") || "{}");
+  } catch {
+    console.warn("[exam] userData rusak");
     return;
   }
 
-  const flags = masterData.auto_flags || {};
-  const jenisUjian = masterData.jenis_ujian_kode;
+  if (userData.is_active !== true) {
+    console.warn("[exam] user tidak aktif, STOP");
+    return;
+  }
 
-  console.log(
-    "%c[Logic] Memproses Form JFT-Basic",
-    "color:#00dbde;font-weight:bold"
-  );
-
-  /* ================= HELPER ================= */
-
-  const setVal = (name, val) => {
-    const el = document.querySelector(`select[name="${name}"]`);
-    if (!el) {
-      console.warn(`[BOT] Select ${name} tidak ditemukan`);
+  /* =====================================================
+     FLAGS
+  ===================================================== */
+  function skip() {
+    const autoInput = localStorage.getItem("autoInput") === "true";
+    if (!autoInput) {
+      console.log("[Status] autoInput = false, skip");
       return;
+    } else {
+      document.getElementById("Next").click();
     }
-    el.value = String(val);
-    el.dispatchEvent(new Event("change", { bubbles: true }));
-  };
-
-  const clickRadio = (name, value) => {
-    const el = document.querySelector(
-      `input[type="radio"][name="${name}"][value="${value}"]`
-    );
-    if (el && !el.checked) el.click();
-  };
-
-  const clickCheck = (name, value) => {
-    const el = document.querySelector(
-      `input[type="checkbox"][name="${name}"][value="${value}"]`
-    );
-    if (el && !el.checked) el.click();
-  };
-
-  /* ================= RETRY BULAN (FIX UTAMA) ================= */
-
-  const setMonthWithRetry = (month, retries = 3, delay = 120) => {
-    const el = document.querySelector('select[name="selBMonth"]');
-    if (!el) {
-      console.warn("[BOT] selBMonth tidak ditemukan");
-      return;
-    }
-
-    const val = String(month).padStart(2, "0");
-
-    el.value = val;
-    el.dispatchEvent(new Event("change", { bubbles: true }));
-
-    setTimeout(() => {
-      if (el.value !== val && retries > 0) {
-        console.warn(`[BOT] Retry set bulan (${retries})`);
-        setMonthWithRetry(val, retries - 1, delay);
-      }
-    }, delay);
-  };
-
-  /* ================= INPUT DATA UMUM ================= */
+  }
 
   function inputDataUmum() {
-    const tglIso = masterData.tanggal_lahir_iso;
-
-    if (tglIso && tglIso.includes("-")) {
-      const [y, m, d] = tglIso.split("-");
-
-      console.log(`[BOT] Input Tanggal: ${y}-${m}-${d}`);
-
-      // Tahun
-      setVal("selBYear", y);
-
-      // Bulan (PAKAI RETRY)
-      setMonthWithRetry(m);
-
-      // Hari
-      setVal("selBDay", d.padStart(2, "0"));
+    // tanggal lahir
+    if (userData["Tanggal Lahir"]) {
+      const listBulan = {
+        january: "01",
+        febrary: "02",
+        march: "03",
+        may: "05",
+        june: "06",
+        july: "07",
+        august: "08",
+        october: "10",
+        december: "12",
+        januari: "01",
+        februari: "02",
+        maret: "03",
+        april: "04",
+        mei: "05",
+        juni: "06",
+        juli: "07",
+        agustus: "08",
+        september: "09",
+        oktober: "10",
+        november: "11",
+        desember: "12",
+      };
+      let [dateInput, monthInput, yearInput] = userData["Tanggal Lahir"]?.split(" ");
+      const yearEl = document.querySelector(`select[name="selBYear"]`);
+      const monthEl = document.querySelector(`select[name="selBMonth"]`);
+      const dayEl = document.querySelector(`select[name="selBDay"]`);
+      yearEl.value = yearInput;
+      monthEl.value = listBulan[monthInput.toLowerCase()];
+      dayEl.value = dateInput.toString().padStart(2, "0");
     }
-
-    // Jenis kelamin
-    if (masterData.jenis_kelamin) {
-      const jk = masterData.jenis_kelamin.toLowerCase();
-      clickRadio("rdoGender", jk.includes("laki") ? "2" : "1");
+    // jenis kelamin
+    if (userData["Jenis Kelamin"]?.toLowerCase().includes("laki")) {
+      document.querySelector(`input[name="rdoGender"][value="2"]`).click();
+    } else if (userData["Jenis Kelamin"]?.toLowerCase().includes("perempuan")) {
+      document.querySelector(`input[name="rdoGender"][value="1"]`).click();
     }
-
-    // Kebangsaan
-    clickRadio("rdoNation", "0");
-    setVal("selNation", "Indonesia");
+    // bangsa & bahasa
+    document.querySelector(`input[name="rdoNation"]`).click();
+    document.querySelector(`select[name="selNation"]`).value = "Indonesia";
   }
 
-  inputDataUmum();
-
-  /* ================= DATA KHUSUS UJIAN ================= */
-
-  if (jenisUjian === "JFT") {
-    clickRadio("rdoLang", "0");
-    setVal("selLang", "Indonesian");
-
-    clickCheck("chkOccupation", "M");
-    setVal("selTraveling", "No, I have not been to Japan before");
-    setVal("selStudy", "Over 300 hours");
-    clickCheck("chkCBT", "A");
-    clickCheck("chkTextbook", "A");
-    clickCheck("chkWebSite", "A");
-  }
-
-  /* ================= DEBUG (AMAN) ================= */
-
-  setTimeout(() => {
-    if (window.document?.form) {
-      console.log(
-        "[BOT][DOB CHECK]",
-        document.form.selBYear.value,
-        document.form.selBMonth.value,
-        document.form.selBDay.value
-      );
-    }
-  }, 600);
-
-  /* ================= AUTO NEXT ================= */
-
-  if (flags.autoInput) {
-    setTimeout(() => {
-      const nextBtn =
-        document.getElementById("Next") ||
-        document.querySelector('input[name="Next"]');
-
-      if (nextBtn) {
-        console.log("[BOT] Klik Berikutnya...");
-        nextBtn.click();
-      } else {
-        console.warn("[BOT] Tombol Next tidak ditemukan");
+  // input for JFT
+  if (localStorage.getItem("exam") === "F10-E10J") {
+    inputDataUmum();
+    // bahasa yang digunakan
+    document.querySelector(`input[name="rdoLang"]`).click();
+    document.querySelector(`select[name="selLang"]`).value = "Indonesian";
+    // minat ssw
+    document.getElementsByName("chkOccupation").forEach((el) => {
+      if (el.value !== "O") {
+        el.click();
       }
-    }, 1200);
+    });
+    // pernah ke jepang/belum
+    document.querySelector('select[name="selTraveling"]').value = "No, I have not been to Japan before";
+    // belajar bahasa
+    document.querySelector('select[name="selStudy"]').value = "Over 300 hours";
+    // ujian?
+    document.querySelector('input[name="chkCBT"][value="A"]').click();
+    // media belajar
+    document.querySelector('input[name="chkTextbook"][value="A"]').click();
+    // chkWebsite
+    document.querySelector('input[name="chkWebSite"][value="A"]').click();
+    // status
+    document.querySelector('select[name="selStatus"]').value = "A";
+    // Next
+    document.getElementById("Next").click();
+    skip();
+  } else if (["T20-J11J", "T10-J11J"].includes(localStorage.getItem("exam"))) {
+    inputDataUmum();
+    // input for SSW Pengolahan Makanan dan Food Service
+    // pekerjaan
+    document.querySelector(`select[name="selJob"]`).value = "University student/graduate student";
+    // pernah ke jepang/belum
+    document.querySelector('input[name="chkResidence"][value="A"]').click();
+    // pernah bekerja di jepang/belum
+    document.querySelector('input[name="chkWork"][value="A"]').click();
+    // ujian berapa kali
+    document.querySelector('input[name="rdoTaken"][value="This is the first time."]').click();
+    // bahan ajar darimana
+    document.querySelector(`select[name="selLearn"]`).value = "I knew that there were learning texts, but I didn't know where I could find them.";
+    // tahu ujian darimana
+    document.querySelector('input[name="chkKnows"][value="A"]').click();
+    // lulus jft
+    document.querySelector('input[name="rdoAbility"][value="Have passed"]').click();
+    // Next
+    document.getElementById("Next").click();
+    skip();
+  } else if (["JH0-I11J", "JH0-I12J", "JH0-J12J"].includes(localStorage.getItem("exam"))) {
+    inputDataUmum();
+    // input for SSW KAIGO
+    document.querySelector("select[name='selAcademic']").value = "High school graduate";
+    document.querySelector("select[name='SelExp']").value = "I don't have any work experience.";
+    document.querySelector("select[name='selVisit']").value = "No, I have not been to Japan before";
+    document.querySelector("select[name='selNursing1']").value = "less than 1 month";
+    document.querySelector("select[name='selNursing2']").value = "self study";
+    document.querySelector("select[name='selJpLevel']").value = "JFT-Basic";
+    // Next
+    document.getElementById("Next").click();
+    skip();
+  } else if (["NC0-I11J", "NC0-I12J"].includes(localStorage.getItem("exam"))) {
+    inputDataUmum();
+    // input for SSW Pertanian dan Peternakan
+    // pernah ke jepang/belum
+    document.querySelector('select[name="selTraveling"]').value = "No";
+    // belajar ssw berapa lama
+    document.querySelector('select[name="selStudy"]').value = "80 hours or less";
+    // pengalaman ternak/tani
+    document.querySelector('select[name="selEng"]').value = "None";
+    document.querySelector('select[name="selAgre"]').value = "Agree";
+    // status
+    document.querySelector('select[name="selStatus"]').value = "I will not take the test in Japan.";
+    // Next
+    document.getElementById("Next").click();
+    skip();
+  } else {
+    console.log("Exam not found.");
   }
 })();
