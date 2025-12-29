@@ -1,70 +1,40 @@
 (function () {
-  const masterData = window.__BOT_DATA__;
-  if (!masterData) return console.error("[BOT] Data tidak ditemukan.");
+  /* =====================================================
+     HARD GUARD – USER AKTIF
+  ===================================================== */
+  let userData;
+  try {
+    userData = JSON.parse(localStorage.getItem("userData") || "{}");
+  } catch {
+    console.warn("[exam] userData rusak");
+    return;
+  }
 
-  const jenisUjianKode = masterData.jenis_ujian_kode;
+  if (userData.is_active !== true) {
+    console.warn("[exam] user tidak aktif, STOP");
+    return;
+  }
 
-  // Mapping kode JFT ke value option
-  const listUjian = {
-    JFT: "F10-E10J",
-    PM: "T20-J11J", // Sesuaikan dengan value asli di web
-    RESTO: "T10-J11J",
-    KGINDO: "JH0-I11J",
-    KGJAPAN: "JH0-J12J",
-    PERTANIAN: "NC0-I11J",
-    PETERNAKAN: "NC0-I12J",
-  };
-
-  const targetValue = listUjian[jenisUjianKode];
-  if (!targetValue) return console.warn("[BOT] Tidak ada mapping untuk:", jenisUjianKode);
-
-  console.log(`[BOT] Menunggu elemen ${targetValue} muncul...`);
-
-  // Fungsi utama untuk memilih
-  const performSelection = (selectEl, optionEl) => {
-    console.log("[BOT] Elemen ditemukan! Mencoba memilih...");
-
-    // 1. Pilih value-nya
-    selectEl.value = targetValue;
-    optionEl.selected = true;
-
-    // 2. Kirim berbagai event agar sistem web sadar ada perubahan
-    const events = ["change", "input", "blur"];
-    events.forEach((evtName) => {
-      selectEl.dispatchEvent(new Event(evtName, { bubbles: true }));
-    });
-
-    // 3. Cek apakah perlu klik otomatis (Next)
-    const autoFlags = masterData.auto_flags || {};
-    if (autoFlags.autoExam) {
-      setTimeout(() => {
-        const btn = document.getElementById("test");
-        if (btn) {
-          console.log("[BOT] Klik tombol Next (ID: test)");
-          btn.click();
-        }
-      }, 1000); // Jeda 1 detik agar pilihan benar-benar tersimpan di sistem web
+  /* =====================================================
+     FLAGS
+  ===================================================== */
+  let exam = localStorage.getItem("exam");
+  if (exam) {
+    if (exam === "JH0-I12J") {
+      exam = "JH0-J12J";
     }
-  };
-
-  // LOGIKA RETRY (Mencoba terus sampai ketemu)
-  let checkCount = 0;
-  const maxChecks = 40; // 40 kali x 250ms = 10 detik maksimal menunggu
-
-  const intervalId = setInterval(() => {
-    checkCount++;
-    const selectEl = document.getElementById("select1");
-    const optionEl = selectEl?.querySelector(`option[value="${targetValue}"]`);
-
-    if (optionEl) {
-      clearInterval(intervalId);
-      performSelection(selectEl, optionEl);
-    } else if (checkCount >= maxChecks) {
-      clearInterval(intervalId);
-      console.error(`[BOT] Gagal total: Dropdown ${targetValue} tidak muncul setelah 10 detik.`);
-
-      // EMERGENCY: Jika gagal, paksa muat ulang halaman atau beri tahu pengguna
-      // location.reload();
+    const examEl = document.querySelector(`#select1 > option[value=${exam}]`);
+    if (examEl) {
+      examEl.selected = true;
+      if (JSON.parse(localStorage.getItem("autoExam"))) {
+        document.getElementById("test").click();
+      } else {
+        console.log("Auto exam is disabled.");
+      }
+    } else {
+      console.log("Invalid exam selected.");
     }
-  }, 250); // Cek setiap seperempat detik agar sangat responsif
+  } else {
+    console.log("No exam selected.");
+  }
 })();
