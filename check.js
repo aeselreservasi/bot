@@ -19,7 +19,7 @@
      FLAGS
   ===================================================== */
   const autoCheck = localStorage.getItem("autoCheck") === "true";
-  if (autoCheck) {
+  if (!autoCheck) {
     console.log("Auto check is disabled.");
   } else if (location.href === "https://j6.prometric-jp.com/Reserve/Policy" || location.href === "https://j7.prometric-jp.com/Reserve/Policy") {
     // Check the checkbox and click the next button
