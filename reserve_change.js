@@ -1,4 +1,4 @@
-// reserve_change.js (FINAL – RETRY SAFE)
+// reserve_change.js (FINAL – autoFlags synced)
 (function () {
   console.log("[ReserveChange] script loaded");
 
@@ -19,10 +19,17 @@
   }
 
   /* =====================================================
-     FLAGS
+     FLAGS (SYNCED)
   ===================================================== */
-  const autoChange = localStorage.getItem("autoChange") === "true";
-  const autoReserve = localStorage.getItem("autoReserve") === "true";
+  let autoFlags = {};
+  try {
+    autoFlags = JSON.parse(localStorage.getItem("autoFlags") || "{}");
+  } catch {}
+
+  const autoChange = autoFlags.autoChange === true;
+  const autoReserve = autoFlags.autoReserve === true;
+
+  console.log("[ReserveChange] flags:", { autoChange, autoReserve });
 
   /* =====================================================
      KONFIG RETRY
@@ -55,7 +62,6 @@
     if (reserveBtn) {
       console.log("[ReserveChange] Reserve button found (no func yet)");
 
-      // fallback event
       ["mousedown", "mouseup", "click"].forEach((type) => {
         reserveBtn.dispatchEvent(
           new MouseEvent(type, {
@@ -101,7 +107,6 @@
 
     retryTimer = setInterval(tryTriggerReserve, RETRY_INTERVAL);
     tryTriggerReserve(); // immediate try
-
     return;
   }
 
