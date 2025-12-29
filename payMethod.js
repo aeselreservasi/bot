@@ -1,3 +1,19 @@
+(function () {
+  /* =====================================================
+     HARD GUARD – USER AKTIF
+  ===================================================== */
+  let userData;
+  try {
+    userData = JSON.parse(localStorage.getItem("userData") || "{}");
+  } catch {
+    console.warn("[exam] userData rusak");
+    return;
+  }
+
+  if (userData.is_active !== true) {
+    console.warn("[exam] user tidak aktif, STOP");
+    return;
+  }
 if (JSON.parse(localStorage.getItem("autoPayMethod"))) {
   console.log("Auto pay method is enabled.");
   document.querySelector(`input[value="zotapay"]`).click();
@@ -10,3 +26,4 @@ if (JSON.parse(localStorage.getItem("autoPayMethod"))) {
 } else {
   console.log("Auto pay method is disabled.");
 }
+})();
