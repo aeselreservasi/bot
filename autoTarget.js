@@ -1,4 +1,14 @@
 (function () {
+  /* ================= FLAG HELPER ================= */
+  function getFlag(name) {
+    try {
+      const flags = JSON.parse(localStorage.getItem("autoFlags") || "{}");
+      return flags[name] === true;
+    } catch {
+      return false;
+    }
+  }
+
   /* =====================================================
      HARD GUARD – USER AKTIF
   ===================================================== */
@@ -14,145 +24,169 @@
     console.warn("[exam] user tidak aktif, STOP");
     return;
   }
-  const autoTarget = JSON.parse(localStorage.getItem("autoTarget")) || false;
-  const fastTarget = JSON.parse(localStorage.getItem("autoFastTarget")) || false;
+
+  /* =====================================================
+     FLAGS (SYNCED)
+  ===================================================== */
+  const autoTarget = getFlag("autoTarget");
+  const fastTarget = getFlag("autoFastTarget");
+
+  console.log("[exam] flags:", { autoTarget, fastTarget });
+
   let datesIndex = parseInt(sessionStorage.getItem("datesIndex") || "0", 10);
   let datesIdxFast = parseInt(sessionStorage.getItem("datesIdxFast") || "0", 10);
   let placeIdxFast = parseInt(sessionStorage.getItem("placeIdxFast") || "0", 10);
   let timeIdxFast = parseInt(sessionStorage.getItem("timeIdxFast") || "0", 10);
 
-  // Ambil data
+  /* =====================================================
+     DATA
+  ===================================================== */
   const dates = userData["Tanggal Ujian"] || [];
   const cities = userData["Lokasi Ujian"] || [];
   const hours = userData["Jam Ujian"] || [];
 
+  /* =====================================================
+     CITY + TIME SEARCH
+  ===================================================== */
   const findCityAndClick = () => {
-    // Jika data kota/jam kosong
     if (!cities.length || !hours.length) {
-      console.warn("Cities or hours data is empty. Proceeding with form search.");
+      console.warn("[exam] cities/hours kosong, fallback search");
       fillFormAndSearch();
       return;
     }
-    for (const city of cities) {
-      // Mengulang mencari tiap kota
-      for (const hour of hours) {
-        // Mengulang mencari tiap jam
-        const element = document.querySelector(`a[href^='JavaScript:onClick=click_next("${city}","${hour}"']`);
-        const element2 = document.querySelector(`button[onclick^='click_next("${city}","${hour}"']`);
 
-        if (element) {
-          console.log(`Found element for city: ${city}, hour: ${hour}. Clicking...`);
-          element.click();
+    for (const city of cities) {
+      for (const hour of hours) {
+        const el =
+          document.querySelector(
+            `a[href^='JavaScript:onClick=click_next("${city}","${hour}"']`
+          ) ||
+          document.querySelector(
+            `button[onclick^='click_next("${city}","${hour}"']`
+          );
+
+        if (el) {
+          console.log(`[exam] found ${city} @ ${hour}, click`);
+          el.click();
           return;
-        } else if (element2) {
-          console.log(`Found element2 for city: ${city}, hour: ${hour}. Clicking...`);
-          element2.click();
-          return;
-        } else {
-          console.log(`Element not found for city: ${city}, hour: ${hour}.`);
         }
       }
     }
 
-    console.log("No matching element found. Attempting fallback.");
+    console.log("[exam] tidak ada match, fallback search");
     fillFormAndSearch();
   };
+
+  /* =====================================================
+     FORM SEARCH (DATE ROTATION)
+  ===================================================== */
   const fillFormAndSearch = () => {
     let retryCount = 0;
-    const maxRetries = 100; // Batasi hingga 100 percobaan (10 detik)
+    const maxRetries = 100;
+
     const dayInput = document.getElementById("exam_day_d");
     const monthInput = document.getElementById("exam_day_m");
     const yearInput = document.getElementById("exam_day_y");
     const countryCodeInput = document.getElementById("countryCode");
-    const searchButton = document.querySelector('input[name="search"]');
-    const searchButton2 = document.querySelector('button[name="search"]');
+    const searchButton =
+      document.querySelector('input[name="search"]') ||
+      document.querySelector('button[name="search"]');
+
     if (!dayInput || !monthInput || !yearInput || !countryCodeInput) {
-      console.log("One or more required form elements are missing.");
+      console.warn("[exam] form tidak lengkap");
       return;
     }
+
     if (!dates.length) {
-      console.log("Dates data is empty.");
+      console.warn("[exam] tanggal kosong");
       return;
     }
-    let dateNow = dates[datesIndex] || dates[0];
+
+    const dateNow = dates[datesIndex] || dates[0];
     const [year, month, day] = dateNow.split("-").map(Number);
+
     dayInput.value = day;
     monthInput.value = month;
     yearInput.value = year;
     countryCodeInput.value = "IDN";
+
     const search = () => {
-      if ((searchButton && !searchButton.disabled) || (searchButton2 && !searchButton2.disabled)) {
-        console.log(`Submitting search for date: ${dateNow}`);
+      if (searchButton && !searchButton.disabled) {
+        console.log("[exam] submit search:", dateNow);
+
         datesIndex = (datesIndex + 1) % dates.length;
         sessionStorage.setItem("datesIndex", datesIndex);
+
         document.form.isReloaded.value = "1";
         document.form.submit();
-      } else if (retryCount < maxRetries) {
-        console.log(`Retrying search button... Attempt ${retryCount + 1}`);
-        retryCount++;
+      } else if (retryCount++ < maxRetries) {
         setTimeout(search, 200);
       } else {
-        console.log("Max retries reached. Reloading page.");
+        console.warn("[exam] max retry, reload");
         location.reload();
       }
     };
+
     search();
   };
 
+  /* =====================================================
+     FAST TARGET (DIRECT POST)
+  ===================================================== */
   function fastTargetFunc() {
-    const datesFast = (userData["Tanggal Ujian"] || []).map((date) => date.replace(/-/g, "/"));
-    const placesFast = userData["Lokasi Ujian"] || [];
-    const timeFast = userData["Jam Ujian"] || [];
+    const datesFast = dates.map((d) => d.replace(/-/g, "/"));
+    const placesFast = cities;
+    const timeFast = hours;
 
-    if (datesFast.length === 0 || placesFast.length === 0 || timeFast.length === 0) {
-      console.log("Data ujian tidak lengkap.");
+    if (!datesFast.length || !placesFast.length || !timeFast.length) {
+      console.warn("[exam] fast target data tidak lengkap");
       return;
     }
 
-    const formFast = document.createElement("form");
-    formFast.method = "POST";
-    formFast.action = "https://j6.prometric-jp.com/Reserve/Upload";
-    const createHiddenInput = (name, value) => {
-      const input = document.createElement("input");
-      input.type = "hidden";
-      input.name = name;
-      input.value = value;
-      return input;
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = location.origin + "/Reserve/Upload";
+
+    const hidden = (n, v) => {
+      const i = document.createElement("input");
+      i.type = "hidden";
+      i.name = n;
+      i.value = v;
+      return i;
     };
-    formFast.appendChild(createHiddenInput("examMethod", "TestCenter"));
-    formFast.appendChild(createHiddenInput("In_examstart", timeFast[timeIdxFast]));
-    formFast.appendChild(createHiddenInput("In_place_no", placesFast[placeIdxFast]));
-    formFast.appendChild(createHiddenInput("In_exam_day", datesFast[datesIdxFast]));
-    // Update indeks dengan urutan yang benar
+
+    form.appendChild(hidden("examMethod", "TestCenter"));
+    form.appendChild(hidden("In_examstart", timeFast[timeIdxFast]));
+    form.appendChild(hidden("In_place_no", placesFast[placeIdxFast]));
+    form.appendChild(hidden("In_exam_day", datesFast[datesIdxFast]));
+
     timeIdxFast++;
     if (timeIdxFast >= timeFast.length) {
       timeIdxFast = 0;
       placeIdxFast++;
       if (placeIdxFast >= placesFast.length) {
         placeIdxFast = 0;
-        datesIdxFast++;
-        if (datesIdxFast >= datesFast.length) {
-          datesIdxFast = 0; // Reset ke awal jika semua kombinasi telah dicoba
-        }
+        datesIdxFast = (datesIdxFast + 1) % datesFast.length;
         sessionStorage.setItem("datesIdxFast", datesIdxFast);
       }
       sessionStorage.setItem("placeIdxFast", placeIdxFast);
     }
     sessionStorage.setItem("timeIdxFast", timeIdxFast);
 
-    document.body.appendChild(formFast);
-    formFast.submit();
+    document.body.appendChild(form);
+    form.submit();
   }
 
-  // Eksekusi utama
+  /* =====================================================
+     EXECUTION
+  ===================================================== */
   if (fastTarget) {
+    console.log("[exam] FAST TARGET ENABLED");
     fastTargetFunc();
+  } else if (autoTarget) {
+    console.log("[exam] NORMAL TARGET ENABLED");
+    findCityAndClick();
   } else {
-    if (autoTarget) {
-      console.log("Fast Target is disabled.");
-      findCityAndClick();
-    } else {
-      console.log("Normal Target is disabled.");
-    }
+    console.log("[exam] target disabled");
   }
 })();
