@@ -1,4 +1,14 @@
 (function () {
+  /* ================= FLAG HELPER ================= */
+  function getFlag(name) {
+    try {
+      const flags = JSON.parse(localStorage.getItem("autoFlags") || "{}");
+      return flags[name] === true;
+    } catch {
+      return false;
+    }
+  }
+
   /* =====================================================
      HARD GUARD – USER AKTIF
   ===================================================== */
@@ -6,39 +16,65 @@
   try {
     userData = JSON.parse(localStorage.getItem("userData") || "{}");
   } catch {
-    console.warn("[exam] userData rusak");
+    console.warn("[confirm] userData rusak");
     return;
   }
 
   if (userData.is_active !== true) {
-    console.warn("[exam] user tidak aktif, STOP");
+    console.warn("[confirm] user tidak aktif, STOP");
     return;
   }
-  const nomorTelp1 = document.querySelector("input[name='tel_1']");
-  const nomorTelp2 = document.querySelector("[name='tel_1']");
-  const confirm0 = document.getElementById(`next`);
-  if (nomorTelp1) {
-    nomorTelp1.value = userData["Nomor Telepon"] || "0";
-  } else if (nomorTelp2) {
-    nomorTelp2.value = userData["Nomor Telepon"] || "0";
+
+  /* =====================================================
+     FLAGS (SYNCED)
+  ===================================================== */
+  const autoConfirm = getFlag("autoConfirm");
+
+  console.log("[confirm] autoConfirm =", autoConfirm);
+
+  /* =====================================================
+     INPUT NOMOR TELEPON
+  ===================================================== */
+  const phoneValue = userData["Nomor Telepon"] || "0";
+
+  const telInput =
+    document.querySelector("input[name='tel_1']") ||
+    document.querySelector("[name='tel_1']");
+
+  if (telInput) {
+    telInput.value = phoneValue;
+    telInput.dispatchEvent(new Event("input", { bubbles: true }));
+    telInput.dispatchEvent(new Event("change", { bubbles: true }));
   } else {
-    console.log("Nomor Telepon not found.");
+    console.warn("[confirm] input nomor telepon tidak ditemukan");
   }
 
-  if (confirm0.disabled) {
+  /* =====================================================
+     CONFIRM BUTTON
+  ===================================================== */
+  const confirmBtn = document.getElementById("next");
+
+  if (!confirmBtn) {
+    console.warn("[confirm] tombol confirm tidak ditemukan");
+    return;
+  }
+
+  if (confirmBtn.disabled) {
+    console.warn("[confirm] tombol confirm disabled, reload");
     location.reload();
-  } else {
-    console.log("Confirm button is enabled.");
+    return;
   }
 
-  if (JSON.parse(localStorage.getItem("autoConfirm"))) {
-    console.log("Auto confirm is enabled.");
+  console.log("[confirm] tombol confirm aktif");
+
+  if (autoConfirm) {
     try {
-      confirm0.click();
-    } catch (error) {
-      console.log(error);
+      console.log("[confirm] autoConfirm ENABLED, click");
+      confirmBtn.click();
+    } catch (e) {
+      console.warn("[confirm] gagal klik confirm", e);
     }
   } else {
-    console.log("Auto confirm is disabled.");
+    console.log("[confirm] autoConfirm disabled");
   }
 })();
