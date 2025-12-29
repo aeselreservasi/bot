@@ -26,36 +26,37 @@
     console.warn("[inputData] user tidak aktif, STOP");
     return;
   }
-
-  /* ================= FLAGS ================= */
-  var autoInput = getFlag("autoInput");
-  console.log("[inputData] autoInput =", autoInput, "step =", statusStep);
-
-  /* ================= NEXT HANDLER ================= */
-  function goNext() {
-    if (!autoInput) return;
-
-    var started = Date.now();
+  /* ================= RETRY NEXT ================= */
+  function retryClickNext(maxRetry) {
+    var attempt = 0;
     var timer = setInterval(function () {
-      var btn = document.getElementById("Next");
+      attempt++;
 
-      if (btn && !btn.disabled) {
+      var btn = document.getElementById("Next");
+      var canClick = btn && !btn.disabled;
+
+      if (canClick) {
         clearInterval(timer);
-        console.log("[inputData] Next ready");
+        console.log("[inputData] Next clicked (attempt " + attempt + ")");
 
         if (typeof window.fnc_input_check_next === "function") {
           window.fnc_input_check_next();
         } else {
           btn.click();
         }
+        return;
       }
 
-      if (Date.now() - started > 8000) {
+      if (attempt >= maxRetry) {
         clearInterval(timer);
-        console.warn("[inputData] Next timeout");
+        console.warn("[inputData] Next gagal setelah " + maxRetry + " percobaan");
       }
-    }, 300);
+    }, 500);
   }
+
+  /* ================= FLAGS ================= */
+  var autoInput = getFlag("autoInput");
+  console.log("[inputData] autoInput =", autoInput, "step =", statusStep);
 
   /* ================= DATA UMUM ================= */
   function inputDataUmum() {
@@ -99,32 +100,6 @@
       if (y) y.value = year;
       if (m && bulanMap[month]) m.value = bulanMap[month];
       if (d) d.value = day.length === 1 ? "0" + day : day;
-    }
-    function retryClickNext(maxRetry) {
-      var attempt = 0;
-      var timer = setInterval(function () {
-        attempt++;
-
-        var btn = document.getElementById("Next");
-        var canClick = btn && !btn.disabled;
-
-        if (canClick) {
-          console.log("[inputData] Next clicked on attempt", attempt);
-          clearInterval(timer);
-
-          if (typeof window.fnc_input_check_next === "function") {
-            window.fnc_input_check_next();
-          } else {
-            btn.click();
-          }
-          return;
-        }
-
-        if (attempt >= maxRetry) {
-          clearInterval(timer);
-          console.warn("[inputData] Next gagal setelah", maxRetry, "percobaan");
-        }
-      }, 500);
     }
 
     if (userData["Jenis Kelamin"] && userData["Jenis Kelamin"].toLowerCase().indexOf("laki") !== -1) {
@@ -241,7 +216,7 @@
     }
 
     localStorage.setItem(STATUS_STEP_KEY, "1");
-    goNext();
+    retryClickNext(10);
     return;
   }
 
