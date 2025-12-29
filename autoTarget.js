@@ -90,7 +90,7 @@
       } else if (retryCount < maxRetries) {
         console.log(`Retrying search button... Attempt ${retryCount + 1}`);
         retryCount++;
-        setTimeout(search, 100);
+        setTimeout(search, 200);
       } else {
         console.log("Max retries reached. Reloading page.");
         location.reload();
