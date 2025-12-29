@@ -32,17 +32,43 @@
   console.log("[inputData] autoInput =", autoInput);
 
   /* =====================================================
-     HELPERS
+     NEXT HANDLER (FINAL)
   ===================================================== */
   function skip() {
     if (!autoInput) {
       console.log("[inputData] autoInput = false, skip");
       return;
     }
-    const nextBtn = document.getElementById("Next");
-    if (nextBtn) nextBtn.click();
+
+    const startedAt = Date.now();
+    const MAX_WAIT = 8000;
+
+    const timer = setInterval(() => {
+      const nextBtn = document.getElementById("Next");
+
+      if (nextBtn && !nextBtn.disabled) {
+        clearInterval(timer);
+        console.log("[inputData] Next button ready");
+
+        if (typeof window.fnc_input_check_next === "function") {
+          console.log("[inputData] call fnc_input_check_next()");
+          window.fnc_input_check_next();
+        } else {
+          console.log("[inputData] fallback click()");
+          nextBtn.click();
+        }
+      }
+
+      if (Date.now() - startedAt > MAX_WAIT) {
+        clearInterval(timer);
+        console.warn("[inputData] timeout tunggu tombol Next");
+      }
+    }, 300);
   }
 
+  /* =====================================================
+     DATA UMUM
+  ===================================================== */
   function inputDataUmum() {
     /* ===== tanggal lahir ===== */
     if (userData["Tanggal Lahir"]) {
@@ -74,46 +100,40 @@
       };
 
       const parts = userData["Tanggal Lahir"].split(" ");
-      const dateInput = parts[0];
-      const monthInput = parts[1];
-      const yearInput = parts[2];
+      const day = parts[0];
+      const month = parts[1]?.toLowerCase();
+      const year = parts[2];
 
-      const yearEl = document.querySelector('select[name="selBYear"]');
-      const monthEl = document.querySelector('select[name="selBMonth"]');
-      const dayEl = document.querySelector('select[name="selBDay"]');
+      const y = document.querySelector('select[name="selBYear"]');
+      const m = document.querySelector('select[name="selBMonth"]');
+      const d = document.querySelector('select[name="selBDay"]');
 
-      if (yearEl) yearEl.value = yearInput;
-      if (monthEl && listBulan[monthInput.toLowerCase()]) {
-        monthEl.value = listBulan[monthInput.toLowerCase()];
-      }
-      if (dayEl) dayEl.value = dateInput.toString().padStart(2, "0");
+      if (y) y.value = year;
+      if (m && listBulan[month]) m.value = listBulan[month];
+      if (d) d.value = day.padStart(2, "0");
     }
 
     /* ===== jenis kelamin ===== */
     if (userData["Jenis Kelamin"]?.toLowerCase().includes("laki")) {
-      const el = document.querySelector(
-        'input[name="rdoGender"][value="2"]'
-      );
-      if (el) el.click();
+      document
+        .querySelector('input[name="rdoGender"][value="2"]')
+        ?.click();
     } else if (
       userData["Jenis Kelamin"]?.toLowerCase().includes("perempuan")
     ) {
-      const el = document.querySelector(
-        'input[name="rdoGender"][value="1"]'
-      );
-      if (el) el.click();
+      document
+        .querySelector('input[name="rdoGender"][value="1"]')
+        ?.click();
     }
 
-    /* ===== bangsa & bahasa ===== */
-    const nationRadio = document.querySelector('input[name="rdoNation"]');
-    if (nationRadio) nationRadio.click();
-
-    const nationSelect = document.querySelector('select[name="selNation"]');
-    if (nationSelect) nationSelect.value = "Indonesia";
+    /* ===== negara ===== */
+    document.querySelector('input[name="rdoNation"]')?.click();
+    const nation = document.querySelector('select[name="selNation"]');
+    if (nation) nation.value = "Indonesia";
   }
 
   /* =====================================================
-     MAIN LOGIC
+     MAIN LOGIC PER EXAM
   ===================================================== */
   const exam = localStorage.getItem("exam");
 
@@ -121,34 +141,23 @@
   if (exam === "F10-E10J") {
     inputDataUmum();
 
-    const langRadio = document.querySelector('input[name="rdoLang"]');
-    if (langRadio) langRadio.click();
-
-    const langSel = document.querySelector('select[name="selLang"]');
-    if (langSel) langSel.value = "Indonesian";
+    document.querySelector('input[name="rdoLang"]')?.click();
+    const lang = document.querySelector('select[name="selLang"]');
+    if (lang) lang.value = "Indonesian";
 
     document.getElementsByName("chkOccupation").forEach((el) => {
       if (el.value !== "O") el.click();
     });
 
-    const travel = document.querySelector('select[name="selTraveling"]');
-    if (travel) travel.value = "No, I have not been to Japan before";
+    document.querySelector('select[name="selTraveling"]')?.value =
+      "No, I have not been to Japan before";
+    document.querySelector('select[name="selStudy"]')?.value =
+      "Over 300 hours";
 
-    const study = document.querySelector('select[name="selStudy"]');
-    if (study) study.value = "Over 300 hours";
-
-    document
-      .querySelector('input[name="chkCBT"][value="A"]')
-      ?.click();
-    document
-      .querySelector('input[name="chkTextbook"][value="A"]')
-      ?.click();
-    document
-      .querySelector('input[name="chkWebSite"][value="A"]')
-      ?.click();
-
-    const status = document.querySelector('select[name="selStatus"]');
-    if (status) status.value = "A";
+    document.querySelector('input[name="chkCBT"][value="A"]')?.click();
+    document.querySelector('input[name="chkTextbook"][value="A"]')?.click();
+    document.querySelector('input[name="chkWebSite"][value="A"]')?.click();
+    document.querySelector('select[name="selStatus"]')?.value = "A";
 
     skip();
     return;
@@ -158,33 +167,21 @@
   if (["T20-J11J", "T10-J11J"].includes(exam)) {
     inputDataUmum();
 
-    const job = document.querySelector('select[name="selJob"]');
-    if (job) job.value = "University student/graduate student";
-
-    document
-      .querySelector('input[name="chkResidence"][value="A"]')
-      ?.click();
-    document
-      .querySelector('input[name="chkWork"][value="A"]')
-      ?.click();
+    document.querySelector('select[name="selJob"]')?.value =
+      "University student/graduate student";
+    document.querySelector('input[name="chkResidence"][value="A"]')?.click();
+    document.querySelector('input[name="chkWork"][value="A"]')?.click();
     document
       .querySelector(
         'input[name="rdoTaken"][value="This is the first time."]'
       )
       ?.click();
 
-    const learn = document.querySelector('select[name="selLearn"]');
-    if (learn)
-      learn.value =
-        "I knew that there were learning texts, but I didn't know where I could find them.";
-
+    document.querySelector('select[name="selLearn"]')?.value =
+      "I knew that there were learning texts, but I didn't know where I could find them.";
+    document.querySelector('input[name="chkKnows"][value="A"]')?.click();
     document
-      .querySelector('input[name="chkKnows"][value="A"]')
-      ?.click();
-    document
-      .querySelector(
-        'input[name="rdoAbility"][value="Have passed"]'
-      )
+      .querySelector('input[name="rdoAbility"][value="Have passed"]')
       ?.click();
 
     skip();
@@ -195,29 +192,18 @@
   if (["JH0-I11J", "JH0-I12J", "JH0-J12J"].includes(exam)) {
     inputDataUmum();
 
-    const academic = document.querySelector(
-      'select[name="selAcademic"]'
-    );
-    if (academic) academic.value = "High school graduate";
-
-    const exp = document.querySelector('select[name="SelExp"]');
-    if (exp) exp.value = "I don't have any work experience.";
-
-    const visit = document.querySelector('select[name="selVisit"]');
-    if (visit) visit.value = "No, I have not been to Japan before";
-
-    const nursing1 = document.querySelector(
-      'select[name="selNursing1"]'
-    );
-    if (nursing1) nursing1.value = "less than 1 month";
-
-    const nursing2 = document.querySelector(
-      'select[name="selNursing2"]'
-    );
-    if (nursing2) nursing2.value = "self study";
-
-    const level = document.querySelector('select[name="selJpLevel"]');
-    if (level) level.value = "JFT-Basic";
+    document.querySelector('select[name="selAcademic"]')?.value =
+      "High school graduate";
+    document.querySelector('select[name="SelExp"]')?.value =
+      "I don't have any work experience.";
+    document.querySelector('select[name="selVisit"]')?.value =
+      "No, I have not been to Japan before";
+    document.querySelector('select[name="selNursing1"]')?.value =
+      "less than 1 month";
+    document.querySelector('select[name="selNursing2"]')?.value =
+      "self study";
+    document.querySelector('select[name="selJpLevel"]')?.value =
+      "JFT-Basic";
 
     skip();
     return;
@@ -227,21 +213,13 @@
   if (["NC0-I11J", "NC0-I12J"].includes(exam)) {
     inputDataUmum();
 
-    const travel = document.querySelector('select[name="selTraveling"]');
-    if (travel) travel.value = "No";
-
-    const study = document.querySelector('select[name="selStudy"]');
-    if (study) study.value = "80 hours or less";
-
-    const eng = document.querySelector('select[name="selEng"]');
-    if (eng) eng.value = "None";
-
-    const agree = document.querySelector('select[name="selAgre"]');
-    if (agree) agree.value = "Agree";
-
-    const status = document.querySelector('select[name="selStatus"]');
-    if (status)
-      status.value = "I will not take the test in Japan.";
+    document.querySelector('select[name="selTraveling"]')?.value = "No";
+    document.querySelector('select[name="selStudy"]')?.value =
+      "80 hours or less";
+    document.querySelector('select[name="selEng"]')?.value = "None";
+    document.querySelector('select[name="selAgre"]')?.value = "Agree";
+    document.querySelector('select[name="selStatus"]')?.value =
+      "I will not take the test in Japan.";
 
     skip();
     return;
