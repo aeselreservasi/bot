@@ -1,38 +1,85 @@
+// reserve_change.js (FINAL – bot baru compatible)
 (function () {
-  if (
-    // reschedule
-    JSON.parse(localStorage.getItem("autoChange")) &&
-    !JSON.parse(localStorage.getItem("autoReserve"))
-  ) {
-    console.log("Auto change is enabled.");
-    const change = document.querySelector(`[onclick^='WEB_MoveAddressChange']`);
-    if (change) {
-      change.click();
-    } else {
-      console.log("Change button not found.");
-    }
-  } else if (
-    // reserve or cek dalam
-    JSON.parse(localStorage.getItem("autoReserve")) &&
-    !JSON.parse(localStorage.getItem("autoChange"))
-  ) {
-    console.log("Auto reserve is enabled.");
-    try {
-      const reserveManual = document.getElementById("button");
-      const reserveManual2 = document.querySelector(`[onclick^='WEB_MoveNewReg']`);
-      if (reserveManual) {
-        console.log("Reserve Manual 1 Found");
-        // reserveManual.click();
-      } else if (reserveManual2) {
-        console.log("Reserve Manual 2 Found");
-        // reserveManual2.click();
-      } else {
-        console.log("Reserve Button Not Found!");
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  } else {
-    console.log("Please enable auto change or auto reserve.");
+  console.log("[ReserveChange] script loaded");
+
+  /* =====================================================
+     HARD GUARD – USER AKTIF
+  ===================================================== */
+  let userData;
+  try {
+    userData = JSON.parse(localStorage.getItem("userData") || "{}");
+  } catch {
+    console.warn("[ReserveChange] userData rusak");
+    return;
   }
+
+  if (userData.is_active !== true) {
+    console.warn("[ReserveChange] user tidak aktif, STOP");
+    return;
+  }
+
+  /* =====================================================
+     AMBIL FLAG (STRING BASED)
+  ===================================================== */
+  const autoChange = localStorage.getItem("autoChange") === "true";
+  const autoReserve = localStorage.getItem("autoReserve") === "true";
+
+  /* =====================================================
+     LOGIKA UTAMA
+  ===================================================== */
+
+  // ===== RESCHEDULE =====
+  if (autoChange && !autoReserve) {
+    console.log("[ReserveChange] Auto change ENABLED");
+
+    const changeBtn = document.querySelector(
+      `[onclick^="WEB_MoveAddressChange"]`
+    );
+
+    if (changeBtn) {
+      console.log("[ReserveChange] Change button found, clicking...");
+      changeBtn.click();
+    } else {
+      console.log("[ReserveChange] Change button not found");
+    }
+
+    return;
+  }
+
+  // ===== RESERVE BARU / CEK DALAM =====
+  if (autoReserve && !autoChange) {
+    console.log("[ReserveChange] Auto reserve ENABLED");
+
+    try {
+      const reserveBtn1 = document.getElementById("button");
+      const reserveBtn2 = document.querySelector(
+        `[onclick^="WEB_MoveNewReg"]`
+      );
+
+      if (reserveBtn1) {
+        console.log("[ReserveChange] Reserve button #1 found");
+        // reserveBtn1.click();
+        return;
+      }
+
+      if (reserveBtn2) {
+        console.log("[ReserveChange] Reserve button #2 found");
+        // reserveBtn2.click();
+        return;
+      }
+
+      console.log("[ReserveChange] Reserve button not found");
+    } catch (err) {
+      console.error("[ReserveChange] error:", err);
+    }
+
+    return;
+  }
+
+  /* =====================================================
+     DEFAULT
+  ===================================================== */
+  console.log(
+    "[ReserveChange] Tidak ada mode aktif (autoChange / autoReserve)"
+  );
 })();
